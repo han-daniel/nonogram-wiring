@@ -1,0 +1,10 @@
+/*
+!/.gitignore
+!/.nojekyll
+!/index.html
+!/intro.html
+!/play.html
+!/replay.html
+!/README.md
+*.csv
+*.json
