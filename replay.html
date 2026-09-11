@@ -5817,11 +5817,11 @@ function drawBoard(){ const el = document.getElementById('pb'); if (!el) return;
   el.querySelectorAll('g[data-p]').forEach(r2 => { const k = r2.getAttribute('data-p');
     const now = live.has(k), was = prevLive.has(k);
     if (!REDUCE() && now && !was) r2.animate([{opacity: 0, transform: 'scale(0.55)'}, {opacity: 1, transform: 'scale(1.05)', offset: 0.65}, {opacity: 1, transform: 'none'}],
-      {duration: 280, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'backwards'});
+      {duration: BEAT, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'backwards'});
     else if (!REDUCE() && !now && was){ const rc0 = r2.querySelector('rect'), gh = rc0.cloneNode(false);
       gh.setAttribute('fill', P.valMap[k] !== 1 ? RD : T); gh.setAttribute('fill-opacity', '0.92'); gh.setAttribute('stroke', 'none'); gh.setAttribute('pointer-events', 'none');
       gh.style.transformBox = 'fill-box'; gh.style.transformOrigin = 'center'; el.appendChild(gh);
-      const an = gh.animate([{opacity: 1, transform: 'none'}, {opacity: 0, transform: 'scale(0.55)'}], {duration: 220, easing: 'cubic-bezier(.4,0,.7,.4)', fill: 'forwards'});
+      const an = gh.animate([{opacity: 1, transform: 'none'}, {opacity: 0, transform: 'scale(0.55)'}], {duration: 240, easing: 'cubic-bezier(.4,0,.7,.4)', fill: 'forwards'});
       an.onfinish = () => gh.remove(); setTimeout(() => gh.remove(), 400); }
     r2.addEventListener('click', () => { const p = k.split('-'); playAct(+p[0], +p[1]); }); }); }
 let PB_LIVE = new Set();
@@ -5839,19 +5839,25 @@ function playEmpty(){
   const c1 = document.getElementById('cmp'); if (c1) c1.innerHTML = '';
   const c3 = document.getElementById('strip'); if (c3) c3.innerHTML = '';
   statEl.textContent = ''; lab.textContent = ''; playFacts(); afterAtt2(); }
-let PB_TASK = null;
-function rebuildPlay(){ const same = PB_TASK === task && !REDUCE(); PB_TASK = task;
+let PB_TASK = null, PB_N = 0;
+function rebuildPlay(){ const same = PB_TASK === task && !REDUCE(); PB_TASK = task; const prevN = PB_N; PB_N = PACTS.length;
+  const fwd = same && PACTS.length === prevN + 1, back = same && !!att && PACTS.length === prevN - 1 && PACTS.length > 0;   // a new act arrives as a step forward does; undo slides back as step back does
+  const keyOf = c => vkey(c) || (c.getAttribute('data-w') ? 'data-w:' + c.getAttribute('data-w') : '');
+  if (back) svg.querySelectorAll('g.ghost').forEach(g => g.remove());
+  const had = back ? new Set([...svg.querySelectorAll(VKEYS)].map(vkey)) : null, oldG = back ? ghostSnap(svg) : [];
   const oldP = same ? ghostSnap(document.getElementById('pb')).filter(p => !(p[1].classList && p[1].classList.contains('pcell'))) : [], oldB = same ? ghostSnap(document.querySelector('#grid svg')) : [];
-  rebuildPlay0(); ghostOut(document.getElementById('pb'), oldP, 220); ghostOut(document.querySelector('#grid svg'), oldB, 220); }
-function rebuildPlay0(){
+  rebuildPlay0(fwd ? 'fwd' : had);
+  if (back){ const now = new Set([...svg.children].map(keyOf).filter(Boolean)); ghostOut(svg, oldG.filter(p => { const k = keyOf(p[1]); return !k || !now.has(k); }), 300); }
+  ghostOut(document.getElementById('pb'), oldP, 220); ghostOut(document.querySelector('#grid svg'), oldB, 220); }
+function rebuildPlay0(mode){
   const calc = engineReady();
   if (PACTS.length && calc){ att = buildAttempt(PACTS, task, 'yours', D.pz[task], calc);
     att.date = null; att.grade = null; att.cohort = null; att.student = null;
     prep(); }
   else att = null;
-  sel = null; selX = null; selC = null; hiX = new Set(); cyc = 0; curY = new Map();
+  sel = null; selX = null; selC = null; hiX = new Set(); cyc = 0; if (mode && mode !== 'fwd') VIN = mode; else curY = new Map();
   cmpKey = null; gridKey = null; stripKey = null; diffKey = null;
-  step = att ? att.L : 0;
+  step = att ? att.L : 0; ARRIVE = att && mode === 'fwd' ? att.L - 1 : null; SETTLE = !!att && mode === 'fwd';
   drawBoard();
   const st = document.getElementById('pstat');
   if (st){ const n2 = PACTS.length;
