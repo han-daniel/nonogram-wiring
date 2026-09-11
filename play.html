@@ -5987,6 +5987,8 @@ if (loadF) loadF.addEventListener('change', ev => readInto(ev.target.files && ev
 let DRAGT = null;
 document.addEventListener('dragover', ev => { ev.preventDefault(); const b = document.querySelector('.dropbox'); if (!b) return; b.classList.add('over'); clearTimeout(DRAGT); DRAGT = setTimeout(() => b.classList.remove('over'), 160); });
 document.addEventListener('drop', ev => { ev.preventDefault(); if (D.play) return; readInto(ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]); });
+const MOCK_CSV = "";
 if (D.play) rebuildPlay();
+else if (D.demo && MOCK_CSV && new URLSearchParams(location.search).has('mock')) loadTraces(MOCK_CSV);
 else fillAtts();
 </script></body></html>
