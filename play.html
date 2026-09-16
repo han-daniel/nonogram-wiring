@@ -5828,18 +5828,19 @@ function drawBoard(){ const el = document.getElementById('pb'); if (!el) return;
   const pbt = document.querySelector('#pcol .pbtns'); if (pbt){ pbt.style.position = 'relative'; pbt.style.left = ((padL - pad - 6) / 2) + 'px'; }
   const pc = document.getElementById('pcol'); if (pc){ pc.style.flexBasis = Math.max(260, W) + 'px'; pc.style.width = Math.max(260, W) + 'px'; }
   el.innerHTML = g;
-  const prevLive = PB_LIVE; PB_LIVE = live;
+  const sameBoard = PB_BRD === task; PB_BRD = task;   // a board switch is not cells arriving and leaving: the old cells would fade out in the new board's colours
+  const prevLive = sameBoard ? PB_LIVE : new Set(); PB_LIVE = live;
   el.querySelectorAll('g[data-p]').forEach(r2 => { const k = r2.getAttribute('data-p');
     const now = live.has(k), was = prevLive.has(k);
-    if (!REDUCE() && now && !was) r2.animate([{opacity: 0, transform: 'scale(0.55)'}, {opacity: 1, transform: 'scale(1.05)', offset: 0.65}, {opacity: 1, transform: 'none'}],
+    if (!REDUCE() && sameBoard && now && !was) r2.animate([{opacity: 0, transform: 'scale(0.55)'}, {opacity: 1, transform: 'scale(1.05)', offset: 0.65}, {opacity: 1, transform: 'none'}],
       {duration: BEAT, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'backwards'});
-    else if (!REDUCE() && !now && was){ const rc0 = r2.querySelector('rect'), gh = rc0.cloneNode(false);
+    else if (!REDUCE() && sameBoard && !now && was){ const rc0 = r2.querySelector('rect'), gh = rc0.cloneNode(false);
       gh.setAttribute('fill', P.valMap[k] !== 1 ? RD : T); gh.setAttribute('fill-opacity', '0.92'); gh.setAttribute('stroke', 'none'); gh.setAttribute('pointer-events', 'none');
       gh.style.transformBox = 'fill-box'; gh.style.transformOrigin = 'center'; el.appendChild(gh);
       const an = gh.animate([{opacity: 1, transform: 'none'}, {opacity: 0, transform: 'scale(0.55)'}], {duration: 240, easing: 'cubic-bezier(.4,0,.7,.4)', fill: 'forwards'});
       an.onfinish = () => gh.remove(); setTimeout(() => gh.remove(), 400); }
     r2.addEventListener('click', () => { const p = k.split('-'); playAct(+p[0], +p[1]); }); }); }
-let PB_LIVE = new Set();
+let PB_LIVE = new Set(), PB_BRD = null;
 function playAct(r, c){ const on = pOn().has(r + '-' + c);
   PACTS.push({t: on ? 'u' : 'f', r: r, c: c, dt: 0}); rebuildPlay(); }
 function playEmpty(){
@@ -5855,7 +5856,14 @@ function playEmpty(){
   const c3 = document.getElementById('strip'); if (c3) c3.innerHTML = '';
   statEl.textContent = ''; lab.textContent = ''; playFacts(); afterAtt2(); }
 let PB_TASK = null, PB_N = 0;
-function rebuildPlay(){ const same = PB_TASK === task && !REDUCE(); PB_TASK = task; const prevN = PB_N; PB_N = PACTS.length;
+function boardFade(node, rect, dur){ if (!node || !rect || !rect.width) return;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;pointer-events:none;z-index:6;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;height:' + rect.height + 'px';
+  node.setAttribute('width', rect.width); node.setAttribute('height', rect.height); wrap.appendChild(node); document.body.appendChild(wrap);
+  const an = wrap.animate([{opacity: 1}, {opacity: 0}], {duration: dur, easing: EASE, fill: 'forwards'});
+  let fired = false; const done = () => { if (fired) return; fired = true; wrap.remove(); }; an.onfinish = done; setTimeout(done, dur + 120); }
+function rebuildPlay(){ const prevTask = PB_TASK, same = prevTask === task && !REDUCE(); PB_TASK = task; const prevN = PB_N; PB_N = PACTS.length;
+  const swap = !REDUCE() && prevTask !== null && prevTask !== task ? [document.getElementById('pb'), document.querySelector('#grid svg')].map(el => el ? {node: el.cloneNode(true), rect: el.getBoundingClientRect()} : null) : null;
   const fwd = same && PACTS.length === prevN + 1, back = same && !!att && PACTS.length === prevN - 1 && PACTS.length > 0;   // a new act arrives as a step forward does; undo slides back as step back does
   const keyOf = c => vkey(c) || (c.getAttribute('data-w') ? 'data-w:' + c.getAttribute('data-w') : '');
   if (back) svg.querySelectorAll('g.ghost').forEach(g => g.remove());
@@ -5863,7 +5871,9 @@ function rebuildPlay(){ const same = PB_TASK === task && !REDUCE(); PB_TASK = ta
   const oldP = same ? ghostSnap(document.getElementById('pb')).filter(p => !(p[1].classList && p[1].classList.contains('pcell'))) : [], oldB = same ? ghostSnap(document.querySelector('#grid svg')) : [];
   rebuildPlay0(fwd ? 'fwd' : had);
   if (back){ const now = new Set([...svg.children].map(keyOf).filter(Boolean)); ghostOut(svg, oldG.filter(p => { const k = keyOf(p[1]); return !k || !now.has(k); }), 300); }
-  ghostOut(document.getElementById('pb'), oldP, 220); ghostOut(document.querySelector('#grid svg'), oldB, 220); }
+  ghostOut(document.getElementById('pb'), oldP, 220); ghostOut(document.querySelector('#grid svg'), oldB, 220);
+  if (swap){ swap.forEach(o => { if (o) boardFade(o.node, o.rect, 260); });
+    [document.getElementById('pb'), document.querySelector('#grid svg')].forEach(el => { if (el) el.animate([{opacity: 0}, {opacity: 1}], {duration: 220, easing: EASE}); }); } }
 function rebuildPlay0(mode){
   const calc = engineReady();
   if (PACTS.length && calc){ att = buildAttempt(PACTS, task, 'yours', D.pz[task], calc);
