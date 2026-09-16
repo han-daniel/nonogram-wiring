@@ -4743,6 +4743,10 @@ function ghostOut(el, old, dur){ if (!el || !old.length) return; const now = new
   if (document.timeline && document.timeline.currentTime !== null) an.startTime = document.timeline.currentTime;
   let fired = false; const done = () => { if (fired) return; fired = true; gh.remove(); if (!el.querySelector('g.ghost')) el.style.overflow = ''; };
   an.onfinish = done; setTimeout(done, (dur || 300) + 80); }
+function fadeNew(el, old, dur){ if (!el || !old.length || REDUCE()) return; const was = new Set(old.map(p => p[0]));   // the other half of ghostOut: whatever the redraw brought in fades up while the old copies fade out
+  [...el.children].forEach(c => { if (c.getAttribute('class') === 'ghost') return;
+    if (c.tagName === 'path' && c.hasAttribute('data-w')) return;   // wires draw themselves in
+    if (!was.has(c.outerHTML)) c.animate([{opacity: 0}, {opacity: c.getAttribute('opacity') || 1}], {duration: dur || 240, easing: EASE}); }); }
 function stepBackAnimated(){ if (!att || step <= 0) return; document.querySelectorAll('g.ghost').forEach(g => g.remove());
   if (REDUCE()){ setStep(step - 1); return; }
   const keyOf = c => vkey(c) || (c.getAttribute('data-w') ? 'data-w:' + c.getAttribute('data-w') : '');
@@ -5096,14 +5100,17 @@ function endSecond(t2){ if (!t2){ curY2 = new Map(); return; }
     if (ARRIVE !== null) arrive(ARRIVE, true);   // the board grid is shared - the left pane animates it
     if (SETTLE) settle(); });
   PEND2 = null; curY2 = t2; }
-let LASTDRAW = null, CYCANIM = null, CYCOLD = null, SIDEGROW = false; const stepNow = () => step;   // draw() has its own local step (the frame callback), so read the replay position through this   // cycling a wiring: the old wires and rings fade, the side graph slides in
-function cycGhosts(){ if (!CYCOLD) return; const o = CYCOLD; CYCOLD = null; ghostOut(svg, o.chart, 260); const ge = document.querySelector('#grid svg'); if (ge && o.grid.length) ghostOut(ge, o.grid, 260); }
+let LASTDRAW = null, CYCANIM = null, CYCOLD = null, SIDEGROW = false, GRIDANIM = false; const stepNow = () => step;   // draw() has its own local step (the frame callback), so read the replay position through this   // cycling a wiring: the old wires and rings fade, the side graph slides in
+function cycGhosts(){ if (!CYCOLD) return; const o = CYCOLD; CYCOLD = null; ghostOut(svg, o.chart, 260); fadeNew(svg, o.chart, 260); }
 function draw(){ if (grw){ cancelAnimationFrame(grw); grw = null; }
   if (!att){ emptyState(); return; }
   const cycMove = !REDUCE() && !!LASTDRAW && LASTDRAW.att === att && sel !== null && LASTDRAW.sel === sel && LASTDRAW.step === stepNow() && LASTDRAW.view === view && LASTDRAW.cyc !== cyc;
-  if (cycMove){ const ge0 = document.querySelector('#grid svg'), dc = cyc - LASTDRAW.cyc; CYCOLD = {chart: ghostSnap(svg), grid: ge0 ? ghostSnap(ge0) : []}; CYCANIM = {t0: performance.now(), dir: dc === 1 || dc < -1 ? 1 : -1}; SIDEGROW = true; } else { CYCOLD = null; if (!REDUCE() && sel !== null && !(LASTDRAW && LASTDRAW.att === att && LASTDRAW.sel === sel)) SIDEGROW = true; }
+  const selMove = !REDUCE() && !!LASTDRAW && LASTDRAW.att === att && LASTDRAW.step === stepNow() && LASTDRAW.view === view
+    && (LASTDRAW.sel !== sel || LASTDRAW.selX !== selX || LASTDRAW.selC !== selC);
+  GRIDANIM = cycMove || selMove;   // the board beside the chart crossfades its rings, on a new cell as on a new wiring
+  if (cycMove){ const dc = cyc - LASTDRAW.cyc; CYCOLD = {chart: ghostSnap(svg)}; CYCANIM = {t0: performance.now(), dir: dc === 1 || dc < -1 ? 1 : -1}; SIDEGROW = true; } else { CYCOLD = null; if (!REDUCE() && sel !== null && !(LASTDRAW && LASTDRAW.att === att && LASTDRAW.sel === sel)) SIDEGROW = true; }
   if (hiX.size && LASTDRAW && (LASTDRAW.att !== att || LASTDRAW.sel !== sel || LASTDRAW.cyc !== cyc)) hiX = new Set();
-  LASTDRAW = {att: att, sel: sel, step: stepNow(), view: view, cyc: cyc};
+  LASTDRAW = {att: att, sel: sel, selX: selX, selC: selC, step: stepNow(), view: view, cyc: cyc};
   SHAPE = []; FREEZE = false;
   const tgt = targetY(); if (anim){ cancelAnimationFrame(anim); anim = null; }
   const vin = VIN; VIN = null; let from = curY; let moved = false; if (vin){ const f2 = new Map(); tgt.forEach((v, k) => { if (curY.has(k)) f2.set(k, curY.get(k)); }); from = f2; }
@@ -5567,7 +5574,9 @@ const beside = (cap, svgHtml, P, cs2, hint) => D.play
   ? '<div><div><div class="gt bcap">' + cap + '</div>' + svgHtml + '<div class="bhint">' + (hint || '&nbsp;') + '</div></div><div class="soltog"><button class="dbtn" id="solTog">' + (SOL ? 'hide' : 'show') + ' solution</button></div>'
     + '<div id="solBox"' + (SOL ? '' : ' style="display:none"') + '>' + solutionSvg(P, cs2, true) + '</div></div>'
   : '<div class="bes"><div class="gt">' + cap + '</div><div class="bes-row"><div>' + svgHtml + (hint ? '<div class="bhint">' + hint + '</div>' : '<div class="bhint" style="visibility:hidden">click a cell to view wirings</div>') + '</div><div class="bes-sep"></div>' + solutionSvg(P, cs2, true) + '</div></div>';
-function renderGrid(r){ renderGrid0(r); fitMini(document.getElementById('grid')); }
+function renderGrid(r){ const el = document.getElementById('grid'), old = GRIDANIM && !REDUCE() ? ghostSnap(el.querySelector('svg')) : [];
+  GRIDANIM = false; renderGrid0(r); fitMini(el);
+  const ge = el.querySelector('svg'); if (old.length && ge){ ghostOut(ge, old, 260); fadeNew(ge, old, 260); } }
 function renderGrid0(r){ const key = r ? att.id + '/' + r.i + '/' + policy + '/' + cyc : (selX ? att.id + '/x' + selX : (selC !== null ? att.id + '/c' + selC : att.id + '/step' + step)); if (key === gridKey) return; gridKey = key;
   const el = document.getElementById('grid'); const P = D.pz[task];
   if (!r && selX === null && selC !== null){ const ce = (att.evt || []).find(e => e.i === selC); const ck = ce && ce.r !== undefined && ce.r !== null ? ce.r + '-' + ce.c : null;
