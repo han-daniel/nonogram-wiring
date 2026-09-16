@@ -1,5 +1,6 @@
 <!doctype html><html><head><meta charset="utf-8"><title>replay</title>
 <style>body{background:#FBFAF7;color:#333;font-family:system-ui;font-size:13px;margin:20px 24px 40px}
+svg,button,select,.ctl,.ctl-l,.gt,.wtag,.wnav,.bhint,.seg,.grp,.demobar{-webkit-user-select:none;user-select:none}
 .burg{position:relative}
 .top{display:flex;align-items:center;gap:12px;margin:0 0 10px}
 .bbtn{font-size:17px;line-height:1;padding:3px 9px;border-radius:7px;border:1px solid #D8DDD9;background:#FBFAF7;color:#22282A;cursor:pointer}
@@ -4860,8 +4861,12 @@ function combosFor(row){ if (row._list && row._pol === policy) return row._list;
     const redundant = policy !== 'engine' && list.some(x => x.f.S.length < extra.f.S.length && x.f.S.every(k => extra.f.S.indexOf(k) >= 0));
     if (ahead || redundant) list.push(extra); else list.unshift(extra); }
   if (!row.false && row.status !== 'guess' && !(row.prem || []).length){
-    const head = [{f: {S: [], deep: false, ln: row.ln || ''}, taken: !list.some(x => x.taken), act: -1, depth: 0,
-      imp: 0, clue: true, plan: {roots: [], written: []}}];
+    const c0ln = ((P.clue0 || {})[row.k] || []).map(o => o.ln);
+    if (row.ln && c0ln.indexOf(row.ln) < 0) c0ln.unshift(row.ln);
+    const lns = c0ln.length ? c0ln.slice().sort((a, b) => (b === row.ln ? 1 : 0) - (a === row.ln ? 1 : 0)) : [row.ln || ''];
+    const tech0 = P.valMap[row.k] === 1 ? 'simple boxes' : 'simple spaces';   // a clue-alone reading has no premises, so this is what classify() calls it
+    const head = lns.map((ln, i) => ({f: {S: [], deep: false, ln: ln, tech: tech0}, taken: i === 0 && !list.some(x => x.taken), act: -1, depth: 0,
+      imp: 0, clue: true, plan: {roots: [], written: []}}));
     ((P.anchor || {})[row.k] || []).map(a => ({a: a, pr: before.has(a.S[0]) ? rowOfAt(a.S[0], row.i) : null})).filter(o => o.pr).sort((x, y) => y.pr.i - x.pr.i)
       .forEach(o => head.push({f: {S: o.a.S, deep: false, ln: o.a.ln}, taken: false, act: o.pr.i, wact: o.pr.i, depth: pdOf(o.pr) + 1, imp: 0, anchor: true, plan: {roots: [], levels: 0, written: o.a.S}}));
     list.unshift(...head); }
@@ -5611,19 +5616,20 @@ function renderGrid0(r){ const key = r ? att.id + '/' + r.i + '/' + policy + '/'
   if (!anchor){ el.innerHTML = ''; return; }
   const before = new Set(anchor.before);
   const rowOfAt = (kk, i) => rows.filter(q => q.k === kk && q.i < i && (q.gone === null || q.gone > i)).pop();
-  const wired = new Set(), imputed = new Set();
-  if (r){ const list = combosFor(r), cur = list.length ? list[cyc % list.length] : null;
+  const wired = new Set(), imputed = new Set(); let shown = null;
+  if (r){ const list = combosFor(r), cur = list.length ? list[cyc % list.length] : null; shown = cur;
     if (cur) cur.f.S.forEach(k => { if (before.has(k)) wired.add(k); else imputed.add(k); });
     else r.prem.forEach(k => { const w = r.world[k]; if (w && w.virtual) imputed.add(k); else wired.add(k); }); }
   else { imputed.add(xCell(selX)); XP.X.get(selX).ins.forEach((f, i) => { const pr = rows.find(q => q.i === i); if (pr) wired.add(pr.k); }); }
   const cs = 22, padL = 8 + 12 * Math.max.apply(null, P.rows.map(c => c.length)), padT = 8 + 11 * Math.max.apply(null, P.cols.map(c => c.length));
   const W = padL + n * cs + 6, H = padT + n * cs + 6;
-  const c0 = (P.clue0 && P.clue0[r ? anchor.k : xCell(selX)]) || [];
+  const c0all = (P.clue0 && P.clue0[r ? anchor.k : xCell(selX)]) || [];
+  const c0 = r ? (shown && shown.clue ? c0all.filter(o => o.ln === shown.f.ln) : []) : c0all;
   const hotRow = new Set(c0.filter(o => o.o === 'r').map(o => o.li)), hotCol = new Set(c0.filter(o => o.o === 'c').map(o => o.li));
   const band = (x, y, w, h) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="3" fill="' + BL + '" opacity="0.07"/>';
   let g = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">';
-  hotRow.forEach(i => { g += band(1, padT + i * cs + 1, W - 3, cs - 2); });
-  hotCol.forEach(i => { g += band(padL + i * cs + 1, 1, cs - 2, H - 3); });
+  hotRow.forEach(i => { g += band(1, padT + i * cs + 1, Math.max(8, padL - 6), cs - 2); });
+  hotCol.forEach(i => { g += band(padL + i * cs + 1, 1, cs - 2, Math.max(8, padT - 6)); });
   g += mbClues(P, padL, padT, cs, 0.85, hotRow, hotCol) + mbFrame(padL, padT, n, cs, 0.35);
   let gm = '', gh = '';
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++){ const kk = i + '-' + j, x = padL + j * cs, y = padT + i * cs;
