@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Solving in space and time</title>
+<style>
+body{background:#FBFAF7;color:#333;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;margin:20px 24px 60px}
+h1{font-size:20px;font-weight:600;margin:0 0 4px} .lede{color:#5b605d;max-width:860px;line-height:1.5;margin:0 0 14px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;color:#5b605d;margin:0 0 12px} .legend span{display:inline-flex;align-items:center;gap:6px}
+details.lgbox > summary{cursor:pointer;font:11px ui-monospace,Menlo,monospace;color:#6B7471;margin:0 0 6px;width:max-content} details.lgbox:not([open]) > summary{margin:0 0 10px}
+.ctl{display:flex;gap:10px 26px;align-items:center;flex-wrap:wrap;margin:0 0 12px} .ctl .lab{font:11px ui-monospace,Menlo,monospace;color:#6B7471;white-space:nowrap} .cg{display:inline-flex;align-items:center;gap:8px}
+.ctlbar{position:sticky;top:0;z-index:6;background:#FBFAF7;padding:6px 0;margin:0 0 8px;box-shadow:0 1px 0 rgba(0,0,0,.08)} .ctlbar .ctl{margin:0 0 8px} .ctlbar .ctl.stick{margin:0}
+.seg{display:inline-flex;border:1px solid #D8DDD9;border-radius:7px;overflow:hidden;background:#FBFAF7} .seg button{font:inherit;font-size:13px;height:26px;padding:0 12px;border:0;background:transparent;cursor:pointer;color:#22282A} .seg button + button{border-left:1px solid #E3E7E4} .seg button.on{background:#E3EFEA;color:#1F5F54} .seg button{min-width:34px;padding:0 10px;flex:0 0 auto;white-space:nowrap} .seg button:hover{background:#fff} .seg button.on:hover{background:#E3EFEA} .seg button:focus-visible{outline:2px solid #2F7C6F;outline-offset:-3px}
+#atts{overflow-x:auto;padding:0 0 14px}
+.att{background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:6px;padding:8px 12px;margin:0 0 8px;width:max-content;min-width:760px;box-sizing:border-box}
+.ah{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin:0 0 2px;position:sticky;left:12px;width:max-content;max-width:calc(100vw - 90px)} .who{font-weight:600} .meta{color:#5b605d;font-size:12px}
+.grp{position:sticky;left:0;width:max-content;font-weight:600;color:#5b605d;margin:16px 0 6px} .grp:first-child{margin-top:0}
+.rp{text-decoration:none;font-size:12px;border:1px solid #D8DDD9;background:#FBFAF7;border-radius:6px;padding:1px 6px;color:#1F5F54}
+.att svg{display:block;overflow:visible} svg text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.tk,.ptr{cursor:default} svg.hov .ptr{opacity:.12} svg.hov .ptr.hot{opacity:1} .ptr.hot .v{stroke-width:1.8;stroke-opacity:1} .noptr .ptr{display:none} .nobg .bg{display:none} .nostk .stk{display:none} .nofade .er{fill-opacity:.92;stroke-opacity:.6}
+.hv{pointer-events:none} .arc{cursor:default} svg.sel .arc{opacity:.13} svg.sel .hd{opacity:0} .ff-fade svg.hvon .arc.after{opacity:0} svg.stand .arc{opacity:1} svg.stand .arc.gn{opacity:.1} svg.stand .arc.after{opacity:.13} svg.stand .hd.after{opacity:0} .ff-fade svg.stand .arc.after{opacity:0}
+.ff-fade .scene:not(.rev) .hv ~ g, .ff-fade .scene.rev > g:has(~ .hv), .ff-fade .hv .hvf, .ff-fade .hv .hvb{opacity:.07}
+.cases #atts{overflow-x:visible} .cases .att{overflow-x:auto;max-width:calc(100vw - 60px);width:auto} .cases .ctl:not(.stick){display:none}
+.case h2{font-size:15px;font-weight:600;margin:26px 0 4px;max-width:900px} .case .lede{margin:0 0 8px} .notes{pointer-events:none}
+.lvl.on{fill:#1F2A28;font-weight:700} .lvline.on{stroke-opacity:0.25;stroke-width:1.1}
+.top{display:flex;align-items:center;gap:12px;margin:0 0 10px} .burg{position:relative} .bbtn{font-size:17px;line-height:1;padding:3px 9px;border-radius:7px;border:1px solid #D8DDD9;background:#FBFAF7;color:#22282A;cursor:pointer}
+#bnav{display:none;position:absolute;z-index:9;top:30px;left:0;background:#fff;border:1px solid #D8DDD9;border-radius:8px;padding:5px;min-width:210px;box-shadow:0 3px 14px rgba(0,0,0,.08)} #bnav.on{display:block} #bnav a{display:block;padding:7px 11px;border-radius:6px;color:#22282A;text-decoration:none;font-size:13.5px} #bnav a:hover{background:#F1F4F2} #bnav a.here{color:#2F7C6F;font-weight:700}
+.dropbox{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;border:1.5px dashed #B7C1BD;border-radius:10px;padding:34px 18px;margin:10px 0;color:#5b605d;cursor:pointer;background:#fff;max-width:640px;text-align:center} .dropbox b{color:#22282A;font-size:15px} .dropbox .dropnote{font-size:12px;color:#8a8a8a;max-width:460px} .dropbox .dropmsg{color:#D0453E} .dropbox.over{border-color:#2F7C6F;background:#F4F9F7}
+</style></head><body>
+<div class="top"><div class="burg"><button class="bbtn" id="burg" aria-label="sections">&#9776;</button><nav id="bnav"><a href="intro.html">1 &middot; Introduction</a><a href="play.html">2 &middot; Demo</a><a href="replay.html">3 &middot; Replay</a><a href="spacetime.html" class="here">4 &middot; Space and time</a></nav></div><h1 style="margin:0">Space and time</h1></div>
+<details class="lgbox" open><summary>legend</summary><div class="legend" id="legend"></div></details>
+<div class="ctlbar"><div class="ctl"><span class="cg"><span class="lab">board</span><span class="seg" id="bSeg"></span></span><span class="cg"><span class="lab">show</span><span class="seg" id="sSeg"><button data-s="all">all</button><button data-s="done">finished</button><button data-s="open">not finished</button></span></span><span class="cg"><span class="lab">sort</span><span class="seg" id="oSeg"><button data-o="moves">fewest moves</button><button data-o="time">shortest time</button></span></span></div><div class="ctl stick"><span class="cg"><span class="lab">view</span><span style="display:inline-flex;align-items:center;gap:6px;color:#5b605d">from the left<input type="range" id="tilt" min="-70" max="70" step="5" value="50" style="width:170px">from the right</span></span><span class="cg"><span class="lab">marks erased later</span><span class="seg" id="eSeg"><button data-e="1">faded</button><button data-e="0">solid</button></span></span><span class="cg"><span class="lab">glass panes at pauses</span><span class="seg" id="gSeg"><button data-g="on">on</button><button data-g="off">off</button></span></span><span class="cg"><span class="lab">pixels per second</span><span style="display:inline-flex;align-items:center;gap:6px;color:#5b605d"><input type="range" id="zoom" min="0" max="1000" step="1" value="386" style="width:150px"><span id="zoomLab" style="min-width:26px;color:#22282A">10</span></span></span></div></div>
+<div id="atts"></div>
+<script>const DATA = {"K":1.75,"boards":{"nonogram_practice":{"n":4,"rows":[[1],[2,1],[1],[1]],"cols":[[1],[1,1],[1,1],[1]],"name":"P 4×4"},"nonogram1":{"n":5,"rows":[[1,1],[1,1],[2,1],[3],[1,1]],"cols":[[1,1],[4],[1,1],[2],[2]],"name":"N1 5×5"},"nonogram2":{"n":5,"rows":[[1,1],[1],[1,1,1],[2,2],[1,1]],"cols":[[3],[2],[1,1],[2],[1,2]],"name":"N2 5×5"},"nonogram3":{"n":6,"rows":[[3],[1,1,1],[1,3],[1],[1,1,1],[3,2]],"cols":[[2,2],[1,1,1],[2,2],[2],[2,2],[1,1]],"name":"N3 6×6"}},"order":["nonogram_practice","nonogram1","nonogram2","nonogram3"],"atts":[]};
+const T = '#2F7C6F', AM = '#D9A23B', RD = '#D0453E', GR = '#8a8a8a', BL = '#3A6EA5', PU = '#222222', N = '#333', GL = '#6F93AD';
+const COL = {forced: T, guess: AM, false: RD};
+const BRN = '#7A5230', PURP = '#7B5EA7', RSC = '#5b605d', OR2C = '#C0693A';
+const FAMC = {'follows the latest lead': T, 'follows either lead': PURP, 'returns to an earlier lead': BL, 'right guess': AM, 'false guess': OR2C, 'ruled-out fill': RD, 'correction': BRN, 'unfills a right mark': GR, 'button reset': RSC, 'manual reset': RSC};
+const colOf = e => (e.fam && FAMC[e.fam]) || COL[e.kind] || GR;
+const OR = '#C0693A', SD = '#B09A68', SDK = '#76623D', INK = '#1E2326';
+const MAXL = {}; DATA.atts.forEach(a => a.ev.forEach(e => { if (e.level != null) MAXL[a.board] = Math.max(MAXL[a.board] || 0, e.level); }));
+const evOf = (att, i) => (att._byIe || (att._byIe = Object.fromEntries(att.ev.map(x => [x.i, x]))))[i];
+function wiring(att, e){ if (!e || e.kind === 'reset') return {}; const src = e.src || []; return {act: [e.r, e.c], hints: src.map(q => evOf(att, q[0])).filter(Boolean).map(x => [x.r, x.c]), vias: src.filter(q => q[1]).map(q => q[1]), line: e.kind === 'clear' ? null : e.ln}; }
+function placedBy(att, e){ const j = att.ev.indexOf(e); for (let k = j - 1; k >= 0; k--){ const q = att.ev[k]; if (q.kind === 'reset') return null; if (q.r === e.r && q.c === e.c) return q.kind === 'clear' ? null : q; } return null; }
+const hintText = (att, e) => (e.src || []).map(q => { const gv = evOf(att, q[0]); if (!gv) return ''; const hop = q[1] ? lineOf([gv.r, gv.c], q[1]) : ''; return one(gv.r, gv.c) + (hop ? ' on ' + hop : '') + (q[1] ? ' through × ' + one(q[1][0], q[1][1]) : ''); }).filter(Boolean).join(', ');
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const one = (r, c) => '(' + (r + 1) + ',' + (c + 1) + ')';
+const ZPX = v => 5 * Math.pow(6, v / 1000), ZPOS = px => Math.round(1000 * Math.log(px / 5) / Math.log(6)), ZLAB = px => px < 10 ? px.toFixed(1) : String(Math.round(px));
+let board = 'nonogram_practice', show = 'all', sort = 'moves', panes = 'on', lines = 'none', sweeps = '0', erased = '1', marks = '2', front = 'fade', zoom = '10', tilt = 50;
+{ const h = new URLSearchParams(location.hash.slice(1)); if (DATA.order.indexOf(h.get('board')) >= 0) board = h.get('board'); if (['done', 'open', 'all'].indexOf(h.get('show')) >= 0) show = h.get('show'); if (['moves', 'ratio', 'time', 'corr'].indexOf(h.get('sort')) >= 0) sort = h.get('sort'); if (['on', 'off'].indexOf(h.get('panes')) >= 0) panes = h.get('panes'); else if (['2', '5', '10'].indexOf(h.get('panes')) >= 0) panes = 'on'; if (['ptrs', 'both'].indexOf(h.get('lines')) >= 0) lines = 'ptrs'; else if (['none', 'stems'].indexOf(h.get('lines')) >= 0) lines = 'none';  if (['0', '1'].indexOf(h.get('sweeps')) >= 0) sweeps = h.get('sweeps'); if (['0', '1'].indexOf(h.get('erased')) >= 0) erased = h.get('erased'); if (['show', 'fade'].indexOf(h.get('front')) >= 0) front = h.get('front'); else if (h.get('front') === 'gone') front = 'fade'; if (h.get('zoom') !== null && +h.get('zoom') >= 5 && +h.get('zoom') <= 30) zoom = String(Math.round(+h.get('zoom') * 100) / 100); if (h.get('tilt') !== null && isFinite(+h.get('tilt'))) tilt = Math.max(-70, Math.min(70, +h.get('tilt'))); }
+lines = 'none'; front = 'fade'; sweeps = '0'; if (sort !== 'time') sort = 'moves';
+const CH = 17, DY = 5, DEPTH = 11;
+function geom(att){
+  const B = DATA.boards[att.board], n = B.n, PX = +zoom, clueH = Math.max(...B.cols.map(c => c.length)) * 8 + 4;
+  const DX = DEPTH * Math.sin(tilt * Math.PI / 180), ML = 56 + Math.max(0, n * DX), OFF = -n * DX;
+  const maxL = MAXL[att.board] || 0, PLH = 24, LS = 8, TKH = e => e.kind === 'clear' ? 6 : e.kind === 'reset' ? 13 + LS * maxL : 9 + LS * (e.level || 0);
+  const BANDH = 13 + LS * maxL, TK = e => e.kind === 'clear' ? 6 : e.kind === 'reset' ? 13 + LS * maxL : 9 + LS * (e.level || 0);
+  const need = att._need !== undefined ? att._need : (att._need = att.ev.reduce((m, e) => { const nv = new Set((e.src || []).filter(q => q[1]).map(q => q[1].join('-'))).size; return nv ? Math.max(m, TK(e) + 1 + 19 + 7.5 * (nv - 1) + 2.5 + 2.8 + 4.4 + 14 + 4 - BANDH) : m; }, 0));
+  const ARCH = Math.max(30, Math.ceil(need)), GAP = Math.max(clueH - 3, 14) + 13, TOP = n * DY + GAP + BANDH + ARCH + 6, FLOOR = TOP + n * CH, RAIL = TOP - n * DY, TICKY = RAIL - GAP, BTOP = TICKY - BANDH, LABY = TICKY + 17, H = FLOOR + 56, W = ML + att.dur * PX + Math.max(0, -n * DX) + 80;
+  const P = (t, r, c) => [ML + t * PX + c * DX + OFF, TOP + r * CH - c * DY];
+  const pt = (t, r, c) => { const p = P(t, r, c); return p[0].toFixed(1) + ' ' + p[1].toFixed(1); };
+  const quad = (t, r0, c0, r1, c1) => 'M' + pt(t, r0, c0) + ' L' + pt(t, r0, c1) + ' L' + pt(t, r1, c1) + ' L' + pt(t, r1, c0) + ' Z';
+  return {B, n, PX, DX, ML, TOP, FLOOR, H, W, P, pt, quad, maxL, PLH, LS, RAIL, TICKY, BTOP, BANDH, ARCH, LABY, TKH};
+}
+function states(att){
+  if (att._st) return att._st;
+  const m = new Map(), out = [];
+  att.ev.forEach(e => { if (e.kind === 'reset') m.clear(); else if (e.kind === 'clear') m.delete(e.r + '-' + e.c); else m.set(e.r + '-' + e.c, [e.r, e.c, e.kind, e.i, e.stays]); out.push([...m.values()]); });
+  return att._st = out;
+}
+const SHOW_OFFER = false;
+function paneSVG(att, g, t, cells, hot, o){
+  o = o || {}; const n = g.n; let s = '<path d="' + g.quad(t, 0, 0, n, n) + '" fill="' + (o.strong ? '#F7FAFC' : 'url(#glass-' + att.id + ')') + '" stroke="' + GL + '" stroke-width="' + (o.strong ? 1.2 : 0.8) + '" stroke-opacity="' + (o.strong ? 0.95 : 0.75) + '"/>';
+  for (let k = 1; k < n; k++) s += '<path d="M' + g.pt(t, k, 0) + ' L' + g.pt(t, k, n) + ' M' + g.pt(t, 0, k) + ' L' + g.pt(t, n, k) + '" stroke="' + GL + '" stroke-width="0.5" stroke-opacity="' + (o.strong ? 0.6 : 0.4) + '" fill="none"/>';
+  cells.forEach(c => { const on = hot && hot.has(c[3]); s += '<path d="' + g.quad(t, c[0], c[1], c[0] + 1, c[1] + 1) + '" fill="' + COL[c[2]] + '" ' + (c[4] ? '' : 'class="er" ') + 'fill-opacity="' + (c[4] ? 0.92 : 0.3) + '"' + ' stroke="' + N + '" stroke-width="' + (on ? 1 : 0.6) + '" stroke-opacity="' + (on ? 0.85 : 0.35) + '"/>'; });
+  const full = new Set(cells.map(c => c[0] + '-' + c[1])); (o.cleared || []).forEach(c => { if (!full.has(c[0] + '-' + c[1])) s += '<path d="' + g.quad(t, c[0], c[1], c[0] + 1, c[1] + 1) + '" fill="#fff" fill-opacity="0.7" stroke="' + GR + '" stroke-width="1.1"/>'; });
+  for (let i = 0; SHOW_OFFER && o.cells && i < o.cells.length; i += 3){ const p = g.P(t, +o.cells[i] + 0.5, +o.cells[i + 1] + 0.5), outright = o.cells[i + 2] === '1';
+    s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="2.4" fill="' + (outright ? SD : 'none') + '" stroke="' + SD + '" stroke-width="' + (outright ? 0 : 1.1) + '"/>'; }
+  s += '<path d="M' + g.pt(t, n, 0) + ' L' + g.pt(t, n, n) + '" stroke="' + N + '" stroke-opacity="0.4" stroke-width="1.2"/>';
+  const ring = (c, dotted, col) => { const edge = g.quad(t, c[0], c[1], c[0] + 1, c[1] + 1), inset = g.quad(t, c[0] + 0.085, c[1] + 0.14, c[0] + 0.915, c[1] + 0.86);
+    return '<path d="' + inset + '" fill="none" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/>' + (dotted ? '<path d="' + edge + '" fill="none" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>' : '') + '<path d="' + edge + '" fill="none" stroke="' + (col || OR) + '" stroke-width="' + (col ? 1.3 : dotted ? 0.95 : 1.05) + '"' + (dotted ? ' stroke-dasharray="1.5 1.3"' : '') + ' stroke-linejoin="round"/>'; };
+  (o.hints || []).forEach(c => { s += ring(c, true); });
+  (o.vias || []).forEach(c => { const d = 'M' + g.pt(t, c[0] + 0.35, c[1] + 0.3) + ' L' + g.pt(t, c[0] + 0.65, c[1] + 0.7) + ' M' + g.pt(t, c[0] + 0.35, c[1] + 0.7) + ' L' + g.pt(t, c[0] + 0.65, c[1] + 0.3); s += '<path d="' + d + '" stroke="#fff" stroke-width="1.7" stroke-linecap="round" fill="none"/><path d="' + d + '" stroke="' + OR + '" stroke-width="0.8" fill="none"/>'; });
+  if (o.act) s += ring(o.act, false);
+  if (o.next) s += ring(o.next, false, INK);
+  const hotRow = o.line && o.line.indexOf('row') === 0 ? +o.line.split(' ')[1] - 1 : -1, hotCol = o.line && o.line.indexOf('col') === 0 ? +o.line.split(' ')[1] - 1 : -1, dRow = o.dest && o.dest.indexOf('row') === 0 ? +o.dest.split(' ')[1] - 1 : -1, dCol = o.dest && o.dest.indexOf('col') === 0 ? +o.dest.split(' ')[1] - 1 : -1;
+  if (o.clues){
+    const halo = ' paint-order="stroke" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"';
+    g.B.rows.forEach((cl, r) => { const p = g.P(t, r + 0.5, 0), lf = g.DX >= 0; s += '<text x="' + (p[0] + (lf ? -4 : 4)).toFixed(1) + '" y="' + (p[1] + 2.6).toFixed(1) + '" font-size="7.5" fill="' + (r === hotRow ? OR : r === dRow ? INK : N) + '"' + (r === hotRow || r === dRow ? ' font-weight="700"' : '') + ' text-anchor="' + (lf ? 'end' : 'start') + '"' + halo + '>' + cl.join(' ') + '</text>'; });
+    g.B.cols.forEach((cl, c) => { const p = g.P(t, 0, c + 0.5); cl.slice().reverse().forEach((v, j) => { s += '<text x="' + p[0].toFixed(1) + '" y="' + (p[1] - 4 - j * 8).toFixed(1) + '" font-size="7.5" fill="' + (c === hotCol ? OR : c === dCol ? INK : N) + '"' + (c === hotCol || c === dCol ? ' font-weight="700"' : '') + ' text-anchor="middle"' + halo + '>' + v + '</text>'; }); });
+  }
+  return s;
+}
+function build(att){
+  const g = geom(att), n = g.n, PX = g.PX, ev = att.ev, byI = {}, st = states(att); ev.forEach((e, j) => { byI[e.i] = e; e._j = j; });
+  const C = e => g.P(e.t, e.r + 0.5, e.c + 0.5), ML = g.ML, X = t => ML + t * PX; let s = '', items = [];
+  s += '<defs><linearGradient id="glass-' + att.id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.78"/><stop offset="0.5" stop-color="#DCEAF3" stop-opacity="0.5"/><stop offset="1" stop-color="#fff" stop-opacity="0.66"/></linearGradient></defs>';
+  s += '<path d="M' + g.pt(0, n, 0) + ' L' + g.pt(att.dur, n, 0) + ' L' + g.pt(att.dur, n, n) + ' L' + g.pt(0, n, n) + ' Z" fill="#000" fill-opacity="0.035"/>';
+  [[0, 0], [n, 0], [0, n], [n, n]].forEach(q => { s += '<path d="M' + g.pt(0, q[0], q[1]) + ' L' + g.pt(att.dur, q[0], q[1]) + '" stroke="' + N + '" stroke-opacity="' + (q[1] ? 0.13 : 0.22) + '" fill="none"/>'; });
+  for (let k = 1; k < n; k++) s += '<path d="M' + g.pt(0, k, 0) + ' L' + g.pt(att.dur, k, 0) + '" stroke="' + N + '" stroke-opacity="0.07" fill="none"/>';
+  [0, att.dur].forEach(tt => { s += '<path d="' + g.quad(tt, 0, 0, n, n) + '" fill="none" stroke="' + GL + '" stroke-width="0.9" stroke-opacity="0.8"/>'; });
+  ev.forEach((e, j) => { if (!e.cp) return; const a0 = X(j ? ev[j - 1].t : 0), a1 = X(e.t), gap = a1 - a0 > 8 ? 3 : 0, x0 = a0 + (j ? gap : 0), x1 = a1 - gap;
+    s += '<rect class="cpb" x="' + x0.toFixed(1) + '" y="' + g.BTOP + '" width="' + Math.max(1.5, x1 - x0).toFixed(1) + '" height="' + (g.TICKY - g.BTOP) + '" fill="' + AM + '" fill-opacity="0.14"><title>a choice point, ' + (j ? 'the lead along the line used up, ' : 'no mark yet, ') + (e.t - (j ? ev[j - 1].t : 0)).toFixed(1) + ' s until the next mark</title></rect>'; });
+  s += '<path d="M' + X(0).toFixed(1) + ' ' + g.TICKY + ' H' + X(att.dur).toFixed(1) + '" stroke="' + N + '" stroke-opacity="0.3"/>';
+  { const cx = X(0) - 13, cy = g.TICKY - (9 + g.LS * g.maxL / 2); s += '<text x="' + cx.toFixed(1) + '" y="' + cy.toFixed(1) + '" font-size="7" fill="' + GR + '" text-anchor="middle" transform="rotate(-90 ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')">level</text>'; }
+  { const step = PX >= 20 ? 5 : PX >= 9 ? 10 : 30, minor = PX >= 20 ? 1 : PX >= 9 ? 5 : 10;
+    for (let t = 0; t <= att.dur; t += minor){ const lab = t % step === 0, big = t % 60 === 0 && t > 0; s += '<path d="M' + X(t).toFixed(1) + ' ' + g.TICKY + ' v' + (lab ? 4 : 2.2) + '" stroke="' + N + '" stroke-opacity="' + (lab ? 0.4 : 0.22) + '"/>';
+      if (lab) s += '<text x="' + X(t).toFixed(1) + '" y="' + g.LABY + '" font-size="' + (big ? 9.5 : 8) + '" fill="' + (big ? N : GR) + '" text-anchor="middle"' + (big ? ' font-weight="600"' : '') + '>' + (big ? (t / 60) + ' min' : t < 60 ? t : Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0')) + '</text>'; } }
+  s += '<path d="M' + X(att.dur).toFixed(1) + ' ' + g.TICKY + ' v9" stroke="' + N + '" stroke-opacity="0.55"/><text x="' + (X(att.dur) + 4).toFixed(1) + '" y="' + (g.TICKY + 3) + '" font-size="8" fill="' + N + '">' + att.dur.toFixed(0) + ' s</text>';
+  ev.forEach(e => { const x = X(e.t), h = g.TKH(e); if (e.kind === 'reset') s += '<rect x="' + (x - 1).toFixed(1) + '" y="' + (g.TICKY - h) + '" width="2" height="' + h + '" fill="' + N + '" fill-opacity="0.6"/>'; else if (e.kind === 'clear') s += '<rect x="' + (x - 0.7).toFixed(1) + '" y="' + (g.TICKY - h) + '" width="1.4" height="' + h + '" fill="' + colOf(e) + '" fill-opacity="0.9"/>'; else s += (e.stays ? '<rect x="' + (x - 3.6).toFixed(1) + '" y="' + (g.TICKY - h - 2.5) + '" width="7.2" height="' + (h + 3.5) + '" rx="3" fill="' + colOf(e) + '" fill-opacity="0.22"/>' : '') + '<rect ' + (e.stays ? '' : 'class="er" ') + 'x="' + (x - 1.1).toFixed(1) + '" y="' + (g.TICKY - h) + '" width="2.2" height="' + h + '" fill="' + colOf(e) + '" fill-opacity="' + (e.stays ? 0.95 : 0.3) + '"/>'; });
+  ev.forEach((e, j) => { const p = ev[j - 1]; if (!p || p.kind === 'reset' || e.kind === 'reset' || (p.r === e.r && p.c === e.c) || !(e.run === p.run || e.turn) || (e.kind !== 'clear' && e.given === 'elsewhere')) return;
+    s += '<path d="M' + X(p.t).toFixed(1) + ' ' + g.TICKY + ' H' + X(e.t).toFixed(1) + '" stroke="' + (e.orient === 'col' ? BL : '#555') + '" stroke-width="2.4" stroke-opacity="0.75"/>'; });
+  { const LONG = 360, wires = [], obs = obstacles(att, g); let nodes = '', boxHeads = '';
+    ev.forEach(e => { if (!(e.src || []).length) return; const L = ptrLayout(g, e, e.src.map(q => ({q, gv: byI[q[0]]})).filter(p => p.gv), LONG, obs); if (!L.pts.length) return; const x2 = L.x2, y2 = L.yT;
+      L.pts.forEach(p => { const gv = p.gv, q = p.q, tip = one(gv.r, gv.c) + (q[1] ? ' gives × ' + one(q[1][0], q[1][1]) + ', which gives ' : ' gives ') + one(e.r, e.c) + (e.ln ? ' on ' + e.ln : '') + ', ' + (e.t - gv.t).toFixed(0) + ' s later'; let body;
+        const op = (0.72 - 0.42 * Math.min(1, Math.max(0, p.dx - 30) / 400)).toFixed(2);
+        if (p.kind === 'hook'){ const y = L.tip - L.HH - 1.5, d = 'M' + x2.toFixed(1) + ' ' + y.toFixed(1) + ' C' + (x2 - 3).toFixed(1) + ' ' + y.toFixed(1) + ' ' + (x2 - 6).toFixed(1) + ' ' + (y - 3).toFixed(1) + ' ' + (x2 - 12).toFixed(1) + ' ' + (y - 3).toFixed(1) + ' m2.5 -2.5 l-2.5 2.5 l2.5 2.5'; body = '<path d="' + d + '" fill="none" stroke="' + PU + '" stroke-width="0.7" stroke-opacity="0.45" stroke-linejoin="round"/><path d="M' + x2.toFixed(1) + ' ' + y.toFixed(1) + ' h-13" fill="none" stroke="#000" stroke-opacity="0" stroke-width="6"/>'; }
+        else body = '<path d="' + p.d + '" fill="none" stroke="' + PU + '" stroke-width="0.7" stroke-opacity="' + op + '"/><path d="' + p.d + '" fill="none" stroke="#000" stroke-opacity="0" stroke-width="6"/>' ;
+        if (p.kind === 'box') boxHeads += '<path class="arc hd" data-t="' + e.i + '" d="' + p.hd + '" fill="' + PU + '" fill-opacity="' + Math.min(0.9, +op + 0.2).toFixed(2) + '"/>';
+        wires.push({dx: p.kind === 'hook' ? -1 : p.dx, html: '<g class="arc' + (e.stays ? '' : ' gone') + '" data-f="' + gv.i + '" data-t="' + e.i + '"><title>' + esc(tip) + '</title>' + body + '</g>'}); });
+      if (L.boxes.length){ const d = L.spine + (L.tip - L.HH); nodes += '<g class="arc' + (e.stays ? '' : ' gone') + '" data-t="' + e.i + '"><path d="' + d + '" fill="none" stroke="' + PU + '" stroke-width="0.7" stroke-opacity="0.6" stroke-linejoin="round"/>' + L.boxes.map(b => xbox(b.x, b.y, PU, 0.8, 0.9)).join('') + '</g>'; }
+      { const direct = L.pts.filter(p => p.kind === 'arc').sort((a, b) => a.dx - b.dx)[0];
+        if (direct) nodes += '<path class="arc hd" data-t="' + e.i + '" d="' + direct.hd + '" fill="' + PU + '" fill-opacity="' + Math.min(0.9, 0.92 - 0.42 * Math.min(1, Math.max(0, direct.dx - 30) / 400)).toFixed(2) + '"/>';
+        else { const d = 'M' + (x2 - 2).toFixed(1) + ' ' + (L.tip - L.HH) + ' L' + x2.toFixed(1) + ' ' + L.tip + ' L' + (x2 + 2).toFixed(1) + ' ' + (L.tip - L.HH) + ' Z'; nodes += '<path class="arc hd" data-t="' + e.i + '" d="' + d + '" fill="' + PU + '" fill-opacity="0.75"/>'; } }
+      nodes += boxHeads; boxHeads = ''; });
+    wires.sort((a, b) => b.dx - a.dx); s += wires.map(w => w.html).join('') + nodes; }
+  for (let L = 0; L <= g.maxL; L++){ const y = g.TICKY - (9 + g.LS * L); s += '<path class="lvline" data-l="' + L + '" d="M' + X(0).toFixed(1) + ' ' + y + ' H' + X(att.dur).toFixed(1) + '" stroke="' + N + '" stroke-opacity="0.1"/><text class="lvl" data-l="' + L + '" x="' + (X(0) - 3).toFixed(1) + '" y="' + (y + 2.3) + '" font-size="6.5" fill="' + GR + '" text-anchor="end">' + L + '</text>'; }
+  const acts = ev.filter(e => e.kind !== 'reset'), paneAt = new Set(), stopAfter = e => { const nx = ev[e._j + 1]; return !nx || nx.wait >= att.cut; };
+  if (panes !== 'off') acts.forEach(e => { if (stopAfter(e)) paneAt.add(e.i); });
+  ev.forEach((e, j) => {
+    if (e.kind === 'reset'){ items.push({t: e.t, z: 1, s: '<g><title>' + esc(e.t.toFixed(1) + ' s: reset, the whole board wiped') + '</title><path d="' + g.quad(e.t, 0, 0, n, n) + '" fill="' + N + '" fill-opacity="0.08" stroke="' + N + '" stroke-width="1.4" stroke-opacity="0.7"/></g>'}); return; }
+    const p = ev[j - 1] && ev[j - 1].kind !== 'reset' ? ev[j - 1] : null;
+    if (p && (p.r !== e.r || p.c !== e.c) && (e.run === p.run || e.turn) && !(e.kind !== 'clear' && e.given === 'elsewhere')){ const a = C(p), b = C(e); items.push({t: e.t, z: 0, s: '<path class="stk" data-t0="' + p.t + '" data-t1="' + e.t + '" data-seg="' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + ' ' + b[0].toFixed(1) + ' ' + b[1].toFixed(1) + '" d="M' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + ' L' + b[0].toFixed(1) + ' ' + b[1].toFixed(1) + '" stroke="' + (e.orient === 'col' ? BL : '#555') + '" stroke-width="1.5" stroke-opacity="0.7" fill="none" stroke-linecap="round"/>'}); }
+    const where = e.turn ? ', a new line, turning at the last mark' : e.change ? ', a new line' : ', same line';
+    if (!paneAt.has(e.i) && marks === '2') items.push({t: e.t, z: 2, s: '<g class="pane mk"><title>' + esc('the board at ' + e.t.toFixed(1) + ' s') + '</title>' + paneSVG(att, g, e.t, st[e._j], new Set(), Object.assign({cleared: e.kind === 'clear' ? [[e.r, e.c]] : []}, wiring(att, e))) + '</g>'});
+    else if (!paneAt.has(e.i)){ let d = ''; for (let k = 1; k < n; k++) d += 'M' + g.pt(e.t, k, 0) + ' L' + g.pt(e.t, k, n) + ' M' + g.pt(e.t, 0, k) + ' L' + g.pt(e.t, n, k) + ' ';
+      items.push({t: e.t, z: 0.3, s: '<g class="bg"><path d="' + d + '" fill="none" stroke="' + GL + '" stroke-width="0.4" stroke-opacity="0.3"/><path d="' + g.quad(e.t, 0, 0, n, n) + '" fill="none" stroke="' + GL + '" stroke-width="0.7" stroke-opacity="0.55"/></g>'}); }
+    if (e.kind === 'clear'){ items.push({t: e.t, z: 1, s: '<g class="tk" data-i="' + e.i + '"><title>' + esc(e.t.toFixed(1) + ' s: clear ' + one(e.r, e.c) + ', one mark taken off, after ' + e.wait.toFixed(1) + ' s' + where) + '</title><path d="' + g.quad(e.t, e.r, e.c, e.r + 1, e.c + 1) + '" fill="#fff" fill-opacity="0.6" stroke="' + GR + '" stroke-width="1"/></g>'}); return; }
+    const by = e.clue ? '; the clues alone give it' : e.src.length ? '; given by ' + e.src.map(q => one(byI[q[0]].r, byI[q[0]].c) + (q[1] ? ' through × ' + one(q[1][0], q[1][1]) : '')).join(' and ') + (e.ln ? ', read on ' + e.ln : '') : '';
+    const tip = e.t.toFixed(1) + ' s: ' + one(e.r, e.c) + ' ' + (e.fam || {forced: 'forced', guess: 'a guess', false: 'a false mark'}[e.kind]) + (e.level != null ? ', level ' + e.level : '') + where + ', after ' + e.wait.toFixed(1) + ' s' + (e.stays ? '; stays to the end' : '; erased later') + by;
+    items.push({t: e.t, z: 1, s: '<g class="tk" data-i="' + e.i + '"><title>' + esc(tip) + '</title><path d="' + g.quad(e.t, e.r, e.c, e.r + 1, e.c + 1) + '" fill="' + colOf(e) + '" ' + (e.stays ? '' : 'class="er" ') + 'fill-opacity="' + (e.stays ? 0.92 : 0.28) + '" stroke="' + N + '" stroke-width="0.7" stroke-opacity="' + (e.stays ? 0.6 : 0.4) + '"/></g>'});
+    e.src.forEach(q => { const gv = byI[q[0]]; if (!gv) return; const a = C(gv), b = C(e), v = q[1] ? g.P(e.t, q[1][0] + 0.5, q[1][1] + 0.5) : null, l = v || a, l2 = v || b, ang = Math.atan2(b[1] - l[1], b[0] - l[0]), hx = b[0] - Math.cos(ang) * 2, hy = b[1] - Math.sin(ang) * 2;
+      let d = 'M' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + (v ? ' L' + v[0].toFixed(1) + ' ' + v[1].toFixed(1) : '') + ' L' + b[0].toFixed(1) + ' ' + b[1].toFixed(1);
+      const head = 'M' + hx.toFixed(1) + ' ' + hy.toFixed(1) + ' L' + (hx - Math.cos(ang - 0.45) * 5).toFixed(1) + ' ' + (hy - Math.sin(ang - 0.45) * 5).toFixed(1) + ' L' + (hx - Math.cos(ang + 0.45) * 5).toFixed(1) + ' ' + (hy - Math.sin(ang + 0.45) * 5).toFixed(1) + ' Z';
+      const xm = v ? '<circle cx="' + v[0].toFixed(1) + '" cy="' + v[1].toFixed(1) + '" r="3" fill="#fff" fill-opacity="0.9"/><path d="M' + g.pt(e.t, q[1][0] + 0.35, q[1][1] + 0.3) + ' L' + g.pt(e.t, q[1][0] + 0.65, q[1][1] + 0.7) + ' M' + g.pt(e.t, q[1][0] + 0.35, q[1][1] + 0.7) + ' L' + g.pt(e.t, q[1][0] + 0.65, q[1][1] + 0.3) + '" stroke="' + PU + '" stroke-width="1.1" fill="none"/>' : '';
+      items.push({t: e.t, z: 3, s: '<g class="ptr" data-f="' + gv.i + '" data-t="' + e.i + '" data-t0="' + gv.t + '" data-t1="' + e.t + '" data-seg="' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + ' ' + l2[0].toFixed(1) + ' ' + l2[1].toFixed(1) + '"><title>' + esc(one(gv.r, gv.c) + (v ? ' gives × ' + one(q[1][0], q[1][1]) + ', which gives ' : ' gives ') + one(e.r, e.c) + (e.ln ? ' on ' + e.ln : '') + ', ' + (e.t - gv.t).toFixed(0) + ' s later') + '</title><path class="v" d="' + d + '" fill="none" stroke="' + PU + '" stroke-width="1" stroke-opacity="0.6" stroke-linejoin="round"/><path d="' + d + '" fill="none" stroke="#000" stroke-opacity="0" stroke-width="6"/><path d="' + head + '" fill="' + PU + '" fill-opacity="0.85"/>' + xm + '</g>'}); });
+  });
+  items.push({t: 0, z: 2, s: '<g class="pane">' + paneSVG(att, g, 0, [], null, {clues: true}) + '</g>'});
+  if (panes !== 'off'){
+    acts.forEach((e, k) => { const nx = acts[k + 1]; if (!nx){ items.push({t: e.t, z: 2, s: '<g class="pane"><title>' + esc('the board at the end, ' + e.t.toFixed(0) + ' s') + '</title>' + paneSVG(att, g, e.t, st[e._j], null, {all: true, cleared: acts.filter(q => q.run === e.run && q.kind === 'clear').map(q => [q.r, q.c])}) + '</g>'}); return; }
+      if (!stopAfter(e)) return; const hot = new Set(acts.filter(q => q.run === e.run && q.kind !== 'clear').map(q => q.i));
+      items.push({t: e.t, z: 2, s: '<g class="pane"><title>' + esc('the board at ' + e.t.toFixed(0) + ' s, before a pause of ' + ev[e._j + 1].wait.toFixed(0) + ' s') + '</title>' + paneSVG(att, g, e.t, st[e._j], hot, {cleared: acts.filter(q => q.run === e.run && q.kind === 'clear').map(q => [q.r, q.c])}) + '</g>'}); });
+  }
+  const dir = g.DX >= 0 ? 1 : -1; items.sort((a, b) => (dir * (a.t - b.t)) || (a.z - b.z));
+  s += '<g class="scene' + (g.DX < 0 ? ' rev' : '') + '">' + items.map(q => '<g data-t="' + q.t + '">' + q.s + '</g>').join('') + '</g>';
+  return '<svg width="' + g.W.toFixed(0) + '" height="' + g.H + '" viewBox="0 0 ' + g.W.toFixed(0) + ' ' + g.H + '" data-id="' + att.id + '">' + s + '</svg>';
+}
+const byId = {}; DATA.atts.forEach(a => { byId[a.id] = a; });
+const CASES = DATA.cases || null;
+function caseNotes(att, c){ const g = geom(att), X = t => g.ML + t * g.PX; let s = '<g class="notes">';
+  (c.notes || []).forEach((n, k) => { const x = X(n.t), e = att.ev.find(q => Math.abs(q.t - n.t) < 0.005), yT = g.TICKY - (e ? g.TKH(e) : 9) - 3, yL = 13 + (k % 3) * 15;
+    s += '<path d="M' + x.toFixed(1) + ' ' + (yL + 3) + ' V' + yT.toFixed(1) + '" stroke="#C0693A" stroke-width="1" stroke-dasharray="2 2"/><circle cx="' + x.toFixed(1) + '" cy="' + yT.toFixed(1) + '" r="2.4" fill="#C0693A"/>'
+      + '<text x="' + (x + 5).toFixed(1) + '" y="' + yL + '" font-size="11.5" font-weight="600" fill="#8A3F16" stroke="#fff" stroke-width="3" paint-order="stroke">' + esc(n.txt) + '</text>'; });
+  return s + '</g>'; }
+if (CASES){ const b0 = build; build = a => { const c = CASES.find(q => q.id === a.id), s = b0(a); return c ? s.replace(/<\/svg>$/, caseNotes(a, c) + '</svg>') : s; }; }
+const caseHead = c => (c.title ? '<div class="case"><h2>' + esc(c.title) + '</h2><p class="lede">' + esc(c.caption) + '</p></div>' : '') + (c.sub ? '<div class="grp">' + esc(c.sub) + '</div>' : '');
+function chrome(){
+  history.replaceState(null, '', '#' + new URLSearchParams({board, show, sort, panes, lines, sweeps, erased, marks, front, zoom, tilt}).toString()); document.getElementById('tilt').value = tilt;
+  const on = (sel, key, v) => document.querySelectorAll(sel + ' button').forEach(b => b.classList.toggle('on', b.dataset[key] === v));
+  on('#bSeg', 'b', board); on('#sSeg', 's', show); on('#oSeg', 'o', sort); on('#gSeg', 'g', panes); on('#pSeg', 'p', lines); on('#fSeg', 'f', front); on('#mSeg', 'm', marks); on('#kSeg', 'k', sweeps); on('#eSeg', 'e', erased); document.getElementById('zoom').value = ZPOS(+zoom); document.getElementById('zoomLab').textContent = ZLAB(+zoom);
+  const box = document.getElementById('atts'); box.classList.toggle('noptr', lines === 'none'); box.classList.toggle('nobg', marks === '0'); box.classList.toggle('nostk', sweeps === '0'); box.classList.toggle('nofade', erased === '0'); box.classList.toggle('ff-fade', front === 'fade');
+}
+function apply(){
+  chrome(); const box = document.getElementById('atts');
+  const key = a => sort === 'moves' ? a.moves : sort === 'ratio' ? -(a.ratio || 0) : sort === 'time' ? a.dur : a.corr;
+  const list = CASES ? CASES.map(c => byId[c.id]) : DATA.atts.filter(a => a.board === board && (show === 'all' || (show === 'done') === a.done)).sort((x, y) => ((x.done ? 0 : 1) - (y.done ? 0 : 1)) || (key(x) - key(y)));
+  const nDone = list.filter(a => a.done).length, head = CASES ? (a, k) => caseHead(CASES[k]) : (a, k) => show !== 'all' ? '' : k === 0 && a.done ? '<div class="grp">finished · ' + nDone + ' attempts, ' + (sort === 'ratio' ? 'longest stops at a line change' : 'fewest ' + (sort === 'moves' ? 'moves' : sort === 'time' ? 'seconds' : 'corrections')) + ' first</div>' : k === nDone ? '<div class="grp">did not finish · ' + (list.length - nDone) + ' attempts</div>' : '';
+  box.innerHTML = list.map((a, k) => head(a, k) + '<div class="att"><div class="ah"><span class="who">' + esc(a.student) + '</span><span class="meta">' + esc(DATA.boards[a.board].name) + ' · ' + (a.done ? 'finished' : 'did not finish') + ' · ' + a.moves + ' moves · ' + a.corr + ' corrections · ' + a.dur.toFixed(0) + ' s</span>' + '</div><div class="ph" data-id="' + a.id + '" style="width:' + Math.ceil(geom(a).W) + 'px;height:' + geom(a).H + 'px"></div></div>').join('');
+  if (window.__drop) window.__drop(); if (io) io.disconnect();
+  io = new IntersectionObserver(es => es.forEach(e => { const ph = e.target; if (e.isIntersecting){ if (ph.dataset.on !== '1'){ ph.innerHTML = build(byId[ph.dataset.id]); ph.dataset.on = '1'; ph.dataset.z = zoom; } } else if (ph.dataset.on === '1'){ if (window.__drop) window.__drop(ph); ph.innerHTML = ''; ph.dataset.on = '0'; } }), {rootMargin: '600px 0px'});
+  box.querySelectorAll('.ph').forEach(ph => io.observe(ph));
+  if (CASES) setTimeout(() => box.querySelectorAll('.att').forEach((el, k) => { const c = CASES[k], a = byId[c.id], g = geom(a); el.scrollLeft = Math.max(0, g.ML + c.t0 * g.PX - 40); }), 0);
+}
+let io = null;
+if (CASES){ document.body.classList.add('cases'); if (!location.hash.includes('zoom=') && DATA.zoom) zoom = String(DATA.zoom); document.querySelector('h1').textContent = DATA.pageTitle; const L = [...document.querySelectorAll('p.lede')]; L.forEach((p, k) => { if (k === 0) p.innerHTML = DATA.intro; else p.remove(); }); }
+function retilt(){
+  history.replaceState(null, '', '#' + new URLSearchParams({board, show, sort, panes, lines, sweeps, erased, marks, front, zoom, tilt}).toString()); if (window.__drop) window.__drop();
+  document.querySelectorAll('#atts .ph').forEach(ph => { const a = byId[ph.dataset.id]; ph.style.width = Math.ceil(geom(a).W) + 'px'; if (ph.dataset.on === '1'){ ph.innerHTML = build(a); ph.dataset.z = zoom; } });
+}
+document.getElementById('bSeg').innerHTML = DATA.order.map(b => '<button data-b="' + b + '">' + DATA.boards[b].name + '</button>').join('');
+[['#bSeg', 'b', v => board = v], ['#sSeg', 's', v => show = v], ['#oSeg', 'o', v => sort = v], ['#gSeg', 'g', v => panes = v], ['#pSeg', 'p', v => lines = v], ['#fSeg', 'f', v => front = v], ['#mSeg', 'm', v => marks = v], ['#kSeg', 'k', v => sweeps = v], ['#eSeg', 'e', v => erased = v]].forEach(q => document.querySelectorAll(q[0] + ' button').forEach(b => b.addEventListener('click', () => { q[2](b.dataset[q[1]]); if (q[0] === '#mSeg'){ chrome(); retilt(); } else if (q[0] === '#pSeg' || q[0] === '#fSeg' || q[0] === '#kSeg' || q[0] === '#eSeg') chrome(); else apply(); })));
+{ let raf2 = 0; document.getElementById('tilt').addEventListener('input', ev => { tilt = +ev.target.value; if (raf2) return; raf2 = requestAnimationFrame(() => { raf2 = 0; retilt(); }); }); }
+{ let raf3 = 0, pend = 0, left = null; const b = document.getElementById('atts'), zl = document.getElementById('zoomLab');
+  const ML = () => { const a0 = DATA.atts.find(a => a.board === board); return a0 ? geom(a0).ML : 0; };
+  const redraw = all => { const was = b.scrollLeft;
+    history.replaceState(null, '', '#' + new URLSearchParams({board, show, sort, panes, lines, sweeps, erased, marks, front, zoom, tilt}).toString());
+    document.querySelectorAll('#atts .ph').forEach(ph => { const a = byId[ph.dataset.id]; ph.style.width = Math.ceil(geom(a).W) + 'px';
+      if (ph.dataset.on !== '1' || ph.dataset.z === zoom) return; const r = ph.getBoundingClientRect();
+      if (all || (r.bottom > 0 && r.top < innerHeight)){ ph.innerHTML = build(a); ph.dataset.z = zoom; } });
+    b.scrollLeft = was <= 0 ? 0 : ML() + left * +zoom; };
+  const commit = () => { clearTimeout(pend); pend = 0; if (left === null) return; cancelAnimationFrame(raf3); raf3 = 0; redraw(true); left = null; };
+  const el = document.getElementById('zoom');
+  el.addEventListener('input', ev => { const t = ZPX(+ev.target.value); zl.textContent = ZLAB(t);
+    if (left === null){ left = Math.max(0, (b.scrollLeft - ML()) / +zoom); if (window.__drop) window.__drop(); }
+    zoom = String(Math.round(t * 1000) / 1000);
+    if (!raf3) raf3 = requestAnimationFrame(() => { raf3 = 0; redraw(false); });
+    clearTimeout(pend); pend = setTimeout(commit, 160); });
+  el.addEventListener('change', commit); }
+function ptrLayout(g, e, srcs, LONG, obs, HH, tipY){
+  const X = t => g.ML + t * g.PX, x2 = X(e.t), yT = g.TICKY - g.TKH(e) - 1, BW = 5, STEPX = 7, STEPY = 7.5, BR = 2.8; HH = HH || 3.6; const tip = tipY !== undefined ? tipY : yT - BR;
+  const pts = srcs.map(p => { const x1 = X(p.gv.t) + 1.2; return Object.assign({}, p, {x1, dx: x2 - x1, y1: g.TICKY - g.TKH(p.gv) - 1}); });
+  const keys = []; pts.filter(p => p.q[1] && p.dx <= LONG).sort((a, b) => a.dx - b.dx).forEach(p => { const k = p.q[1].join('-'); if (keys.indexOf(k) < 0) keys.push(k); });
+  const nv = keys.length, boxAt = k => [x2 - STEPX * k, yT - 19 - STEPY * k];
+  pts.forEach(p => {
+    if (p.dx > LONG){ p.kind = 'hook'; return; }
+    if (p.q[1]){ const k = keys.indexOf(p.q[1].join('-')), b = boxAt(k); p.kind = 'box'; p.k = k; p.xb = b[0]; p.yb = b[1]; const w = wire(g, p.x1, p.y1, b[0], b[1] - BW / 2 - BR, obs, HH); p.d = w.d; p.hd = w.head; return; }
+    p.kind = 'arc'; const w = wire(g, p.x1, p.y1, x2, tip, obs, HH); p.d = w.d; p.hd = w.head; });
+  const boxes = keys.map((k, i) => { const b = boxAt(i); return {key: k, x: b[0], y: b[1]}; });
+  const spine = nv ? 'M' + boxes.slice().reverse().map(b => b.x.toFixed(1) + ' ' + b.y.toFixed(1)).join(' L') + ' L' + x2.toFixed(1) + ' ' : null;
+  return {pts, x2, yT, BW, BR, HH, tip, boxes, spine};
+}
+function obstacles(att, g){ const X = t => g.ML + t * g.PX, out = [];
+  att.ev.forEach(e => { if (e.kind === 'reset') return; const x = X(e.t), yT = g.TICKY - g.TKH(e) - 1; out.push([x, yT]);
+    const nv = new Set((e.src || []).filter(q => q[1]).map(q => q[1].join('-'))).size; if (nv) out.push([x - 7 * (nv - 1), yT - 19 - 7.5 * (nv - 1) - 3]); });
+  return out.sort((a, b) => a[0] - b[0]); }
+const lineOf = (a, b) => a[0] === b[0] ? 'row ' + (a[0] + 1) : a[1] === b[1] ? 'col ' + (a[1] + 1) : '';
+const lab = (x, y, text, col, anchor, size) => '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" font-size="' + (size || 7) + '" fill="' + col + '" text-anchor="' + (anchor || 'middle') + '" paint-order="stroke" stroke="#fff" stroke-width="2.4" stroke-linejoin="round">' + esc(text) + '</text>';
+const xbox = (x, y, col, w, xw) => '<rect x="' + (x - 2.5).toFixed(1) + '" y="' + (y - 2.5).toFixed(1) + '" width="5" height="5" rx="1.2" fill="#fff" stroke="#fff" stroke-width="' + (w + 2.4) + '"/><rect x="' + (x - 2.5).toFixed(1) + '" y="' + (y - 2.5).toFixed(1) + '" width="5" height="5" rx="1.2" fill="#fff" stroke="' + col + '" stroke-width="' + w + '"/><path d="M' + (x - 1.4).toFixed(1) + ' ' + (y - 1.4).toFixed(1) + ' l2.8 2.8 m-2.8 0 l2.8 -2.8" stroke="' + col + '" stroke-width="' + xw + '" fill="none"/>';
+const headA = (x, y, col, sz) => { const c = Math.SQRT1_2, ux = c, uy = c, px = -uy, py = ux; return '<path d="M' + x.toFixed(1) + ' ' + y.toFixed(1) + ' L' + (x - ux * sz + px * sz * 0.55).toFixed(1) + ' ' + (y - uy * sz + py * sz * 0.55).toFixed(1) + ' L' + (x - ux * sz - px * sz * 0.55).toFixed(1) + ' ' + (y - uy * sz - py * sz * 0.55).toFixed(1) + ' Z" fill="' + col + '"/>'; };
+const headD = (x, y, col, sz) => '<path d="M' + (x - sz * 0.55).toFixed(1) + ' ' + (y - sz).toFixed(1) + ' L' + x.toFixed(1) + ' ' + y.toFixed(1) + ' L' + (x + sz * 0.55).toFixed(1) + ' ' + (y - sz).toFixed(1) + ' Z" fill="' + col + '"/>';
+const headR = (x, y, col, sz) => { const d = 'M' + (x - sz).toFixed(1) + ' ' + (y - sz * 0.55).toFixed(1) + ' L' + x.toFixed(1) + ' ' + y.toFixed(1) + ' L' + (x - sz).toFixed(1) + ' ' + (y + sz * 0.55).toFixed(1) + ' Z'; return '<path d="' + d + '" fill="#fff" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><path d="' + d + '" fill="' + col + '"/>'; };
+function wire(g, x1, y1, x2, y2, obs, HH){
+  const top = arcOver(g, x1, y1, x2, y2, obs).my, dir = x2 >= x1 ? 1 : -1, dx = Math.abs(x2 - x1), K = 0.5523, dy1 = Math.max(1, y1 - top), dy2 = Math.max(1, y2 - top);
+  let R1 = Math.max(6, dy1 * 0.9), R2 = Math.max(6, Math.min(dy2 * 1.1, 26)); if (R1 + R2 > dx){ const f = dx / (R1 + R2); R1 *= f; R2 *= f; }
+  const sx = x1 + dir * R1, ex = x2 - dir * R2;
+  const dep = 'M' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' C' + x1.toFixed(1) + ' ' + (y1 - K * dy1).toFixed(1) + ' ' + (x1 + dir * R1 * (1 - K)).toFixed(1) + ' ' + top.toFixed(1) + ' ' + sx.toFixed(1) + ' ' + top.toFixed(1) + (Math.abs(ex - sx) > 0.3 ? ' L' + ex.toFixed(1) + ' ' + top.toFixed(1) : '');
+  const P = [[ex, top], [x2 - dir * R2 * (1 - K), top], [x2, y2 - K * dy2], [x2, y2]];
+  const B = t => { const u = 1 - t; return [u * u * u * P[0][0] + 3 * u * u * t * P[1][0] + 3 * u * t * t * P[2][0] + t * t * t * P[3][0], u * u * u * P[0][1] + 3 * u * u * t * P[1][1] + 3 * u * t * t * P[2][1] + t * t * t * P[3][1]]; };
+  let lo = 0, hi = 1; for (let i = 0; i < 24; i++){ const m = (lo + hi) / 2, q = B(m); if (Math.hypot(x2 - q[0], y2 - q[1]) > HH) lo = m; else hi = m; }
+  const t = lo, Q1 = [P[0][0] + t * (P[1][0] - P[0][0]), P[0][1] + t * (P[1][1] - P[0][1])], M = [P[1][0] + t * (P[2][0] - P[1][0]), P[1][1] + t * (P[2][1] - P[1][1])], Q2 = [Q1[0] + t * (M[0] - Q1[0]), Q1[1] + t * (M[1] - Q1[1])], Q3 = B(t);
+  const ax = x2 - Q3[0], ay = y2 - Q3[1], L = Math.hypot(ax, ay) || 1, ux = ax / L, uy = ay / L, px = -uy, py = ux, hw = HH * 0.55;
+  const head = 'M' + x2.toFixed(1) + ' ' + y2.toFixed(1) + ' L' + (Q3[0] + px * hw).toFixed(1) + ' ' + (Q3[1] + py * hw).toFixed(1) + ' L' + (Q3[0] - px * hw).toFixed(1) + ' ' + (Q3[1] - py * hw).toFixed(1) + ' Z';
+  return {d: dep + ' C' + Q1[0].toFixed(1) + ' ' + Q1[1].toFixed(1) + ' ' + Q2[0].toFixed(1) + ' ' + Q2[1].toFixed(1) + ' ' + Q3[0].toFixed(1) + ' ' + Q3[1].toFixed(1), head, mx: (x1 + x2) / 2, my: top};
+}
+function arcOver(g, x1, y1, x2, y2, obs){
+  const dx = Math.abs(x2 - x1); let floor = Math.min(y1, y2);
+  if (obs){ const lo = Math.min(x1, x2) + 2, hi = Math.max(x1, x2) - 2; for (const o of obs){ if (o[0] > hi) break; if (o[0] > lo && o[1] < floor) floor = o[1]; } }
+  const top = Math.max(g.BTOP - g.ARCH + 4, floor - Math.max(6, Math.min(g.ARCH + 10, 5 + 1.3 * Math.sqrt(dx)))), c = (top - 0.125 * (y1 + y2)) / 0.75;
+  return {d: 'M' + x1.toFixed(1) + ' ' + y1 + ' C' + x1.toFixed(1) + ' ' + c.toFixed(1) + ' ' + x2.toFixed(1) + ' ' + c.toFixed(1) + ' ' + x2.toFixed(1) + ' ' + y2, mx: (x1 + x2) / 2, my: top, c};
+}
+function tickOverlay(att, g, e, visL){
+  if (!e) return ''; const X = t => g.ML + t * g.PX, off = []; let s = '';
+  if (e.kind === 'reset'){ const h = g.TKH(e), x = X(e.t); return '<rect x="' + (x - 3).toFixed(1) + '" y="' + (g.TICKY - h - 2.5) + '" width="6" height="' + (h + 4) + '" rx="1.8" fill="none" stroke="#fff" stroke-width="2"/><rect x="' + (x - 3).toFixed(1) + '" y="' + (g.TICKY - h - 2.5) + '" width="6" height="' + (h + 4) + '" rx="1.8" fill="none" stroke="' + OR + '" stroke-width="0.95"/>'; }
+  const box = (x, dotted, h, col) => '<rect x="' + (x - 3).toFixed(1) + '" y="' + (g.TICKY - h - 2.5) + '" width="6" height="' + (h + 4) + '" rx="1.8" fill="none" stroke="#fff" stroke-width="2"/><rect x="' + (x - 3).toFixed(1) + '" y="' + (g.TICKY - h - 2.5) + '" width="6" height="' + (h + 4) + '" rx="1.8" fill="none" stroke="' + (col || OR) + '" stroke-width="0.95"' + (dotted ? ' stroke-dasharray="1.5 1.3"' : '') + '/>';
+  const top = v => g.TICKY - g.TKH(v) - 3.4;
+  const head = (x, y, col) => '<path d="M' + (x - 2.4).toFixed(1) + ' ' + (y - 4.4).toFixed(1) + ' L' + x.toFixed(1) + ' ' + y.toFixed(1) + ' L' + (x + 2.4).toFixed(1) + ' ' + (y - 4.4).toFixed(1) + ' Z" fill="' + col + '"/>';
+  { const L = ptrLayout(g, e, (e.src || []).map(q => ({q, gv: evOf(att, q[0])})).filter(p => p.gv), Infinity, obstacles(att, g), 4.4, top(e) - 3);
+    let bh = ''; L.pts.slice().sort((a, b) => b.dx - a.dx).forEach(p => { const op = (1 - 0.5 * Math.min(1, Math.max(0, p.dx - 30) / 400)).toFixed(2); s += '<path d="' + p.d + '" fill="none" stroke="' + PU + '" stroke-width="1.15" stroke-opacity="' + op + '"/>' + box(p.x1 - 1.2, true, g.TKH(p.gv)); bh += '<path d="' + p.hd + '" fill="' + PU + '"/>';
+      if (p.x1 < visL + 4) off.push(one(p.gv.r, p.gv.c) + ' at ' + p.gv.t.toFixed(0) + ' s'); });
+    if (L.boxes.length){ const d = L.spine + (L.tip - L.HH); s += '<path d="' + d + '" fill="none" stroke="' + PU + '" stroke-width="1.15" stroke-linejoin="round"/>' + L.boxes.map(b => xbox(b.x, b.y, PU, 1, 1.2)).join('') + bh; } }
+  { const h = g.TKH(e), x = X(e.t); s += '<rect x="' + (x - 1.1).toFixed(1) + '" y="' + (g.TICKY - h) + '" width="2.2" height="' + h + '" fill="' + colOf(e) + '"/>'; }
+  s += box(X(e.t), false, g.TKH(e));
+  { const L2 = ptrLayout(g, e, (e.src || []).map(q => ({q, gv: evOf(att, q[0])})).filter(p => p.gv), Infinity, obstacles(att, g), 4.4, top(e) - 3); const direct = L2.pts.filter(p => p.kind === 'arc').sort((a, b) => a.dx - b.dx)[0]; if (direct) s += '<path d="' + direct.hd + '" fill="' + PU + '"/>'; else if (L2.boxes.length) s += head(X(e.t), top(e) - 3, PU); }
+  let offWord = 'hinted by ';
+  if (e.kind === 'clear'){ const o = placedBy(att, e); if (o){ const DK = '#5f6366', x1 = X(o.t), x2 = X(e.t), a = wire(g, x2, top(e) - 3, x1, top(o) - 3, obstacles(att, g), 4.4);
+      s += '<path d="' + a.d + '" fill="none" stroke="' + DK + '" stroke-width="1.15"/>' + box(x1, true, g.TKH(o), DK) + '<path d="' + a.head + '" fill="' + DK + '"/>';
+      if (x1 < visL + 4){ off.push(o.t.toFixed(0) + ' s'); offWord = 'placed at '; } } }
+  if (off.length) s += '<text x="' + (visL + 8).toFixed(1) + '" y="' + (g.FLOOR + 11) + '" font-size="9.5" font-weight="600" fill="' + OR + '" paint-order="stroke" stroke="#fff" stroke-width="3" stroke-linejoin="round">◂ ' + offWord + esc(off.join(', ')) + '</text>';
+  return s; }
+function nextOverlay(att, g, nx){ if (!nx) return ''; const x = g.ML + nx.t * g.PX, h = g.TKH(nx), r = '<rect x="' + (x - 3).toFixed(1) + '" y="' + (g.TICKY - h - 2.5) + '" width="6" height="' + (h + 4) + '" rx="1.8" fill="none" stroke="';
+  return r + '#fff" stroke-width="2.2"/>' + r + INK + '" stroke-width="1.2"/>'; }
+function offerText(o, still){
+  const lines = Object.keys(o).sort((a, b) => (a[0] === b[0] ? 0 : a[0] === 'r' ? -1 : 1) || (+a.split(' ')[1] - +b.split(' ')[1])), dl = lines.filter(l => o[l][0] > 0), xl = lines.filter(l => !o[l][0]), tot = a => a.reduce((m, l) => m + o[l][0] + o[l][1], 0);
+  const list = a => a.length > 4 ? a.slice(0, 3).join(', ') + ' and ' + (a.length - 3) + ' more lines' : a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0];
+  const sd = x => '<tspan fill="' + SDK + '" font-weight="600">' + x + '</tspan>', w = still ? ' still offered ' : ' offered ';
+  return dl.length ? sd(list(dl)) + w + (tot(dl) > 1 ? 'fills' : 'a fill') + (xl.length ? ', ' + sd(list(xl)) + ' through a ×' : '') : xl.length ? 'only ' + sd(list(xl)) + ' offered ' + (tot(xl) > 1 ? 'fills' : 'a fill') + ', through a ×' : 'no line offered a fill'; }
+function whereText(nx, first){
+  const z = nx.pz, ik = x => '<tspan fill="' + INK + '" font-weight="700">' + x + '</tspan>', cell = nx.kind === 'reset' ? '' : one(nx.r, nx.c), dest = z.dest, dc = z.dc || [];
+  const mine = dc.some(q => q[0] === nx.r && q[1] === nx.c), others = dc.filter(q => !(q[0] === nx.r && q[1] === nx.c)).map(q => one(q[0], q[1]));
+  const to = first ? 'started on ' : 'went to ', go = dest && dest === z.cur ? 'kept on ' : to, what = z.cls === 'guess' ? 'a guess' : 'a false mark';
+  return z.cls === 'keep' ? 'went on along ' + ik(dest) + ', which still offered ' + cell : z.cls === 'move' ? to + ik(dest) + ', which offered ' + cell : z.cls === 'movex' ? to + ik(dest) + ', which offered ' + cell + ' through a ×'
+    : z.cls === 'clear' ? 'took ' + ik(cell) + ' off' : z.cls === 'reset' ? 'wiped the board'
+    : !dest ? to + ik(cell) + ', which no line offered: ' + what
+    : mine ? go + ik(dest) + (z.cls === 'false' ? ', where the false marks on the board seemed to give ' + cell + ': ' + what : ', which offered ' + cell)
+    : !dc.length ? go + ik(dest) + ', which offered nothing: ' + what + ' at ' + cell
+    : go + ik(dest) + ', which offered ' + others.slice(0, 2).join(' and ') + (others.length > 2 ? ' and more' : '') + ' but not ' + cell + ': ' + what; }
+function gapText(att, t, last, nx){
+  const f = x => x >= 10 ? x.toFixed(0) : x.toFixed(1), what = e => e.kind === 'reset' ? 'the reset' : (e.kind === 'clear' ? 'the clear of ' : '') + one(e.r, e.c);
+  if (!nx){ const o = att.end || {}; return [t.toFixed(1) + ' s · after ' + what(last) + ', the last act, at ' + last.t.toFixed(1) + ' s', Object.keys(o).length ? offerText(o, true) : att.done ? 'the board is solved' : 'no line offered a fill', att.done ? 'the attempt ends here, finished' : 'the attempt ends here, not finished']; }
+  const why = !nx.cp ? '' : last ? 'a choice point, the lead along the line in hand used up · ' : 'a choice point, no mark yet · ';
+  const w = nx.wait, l1 = why + t.toFixed(1) + ' s · ' + (last ? 'after ' + what(last) + ' at ' + last.t.toFixed(1) + ' s' : 'before the first mark') + ' · ' + (w >= att.cut ? 'a pause of ' : 'a wait of ') + f(w) + ' s';
+  return [l1, nx.pz ? offerText(nx.pz.o, !!last) : '', nx.pz ? whereText(nx, !last) : '']; }
+{ const box = document.getElementById('atts'), NS = 'http://www.w3.org/2000/svg'; let st = null, raf = 0, lastEv = null;
+  const drop = ph => { if (!st || (ph && !ph.contains(st.svg))) return; st.svg.querySelectorAll('.lvl.on, .lvline.on').forEach(x => x.classList.remove('on')); if (st.lvG) st.lvG.remove(); st.svg.classList.remove('sel'); st.svg.classList.remove('hvon'); st.svg.classList.remove('stand'); st.lines.forEach(L => { if (L.hid) L.el.style.visibility = ''; }); st.G.remove(); st.svg.classList.remove('hov'); st.hot.forEach(x => x.classList.remove('hot')); st = null; };
+  window.__drop = drop;
+  const start = svg => { const att = byId[svg.dataset.id], g = geom(att), scene = svg.querySelector('.scene'), kids = [...scene.children], G = document.createElementNS(NS, 'g'); G.setAttribute('class', 'hv');
+    G.classList.toggle('fut', g.DX >= 0);
+    const n_ = g.n, face = g.DX >= 0 ? att.dur : 0;
+    const edges = '<path d="' + g.quad(face, 0, 0, n_, n_) + '" fill="none" stroke="' + GL + '" stroke-width="0.9" stroke-opacity="0.4"/><path d="M' + g.pt(0, 0, 0) + ' L' + g.pt(att.dur, 0, 0) + ' M' + g.pt(0, n_, 0) + ' L' + g.pt(att.dur, n_, 0) + '" fill="none" stroke="' + N + '" stroke-opacity="0.16"/>';
+    G.innerHTML = '<g class="hvb"></g><g class="hvp"></g><clipPath id="hvclip-' + att.id + '"><path d="' + g.quad(0, 0, 0, n_, n_) + '"/></clipPath><g class="hve" clip-path="url(#hvclip-' + att.id + ')">' + edges + '</g><g class="hvn"></g><g class="hvf"></g><g class="hvt"></g><g class="hvl"><path d="M' + g.ML + ' ' + g.TICKY + ' V' + g.RAIL + ' M' + g.ML + ' ' + (g.FLOOR - n_ * DY) + ' V' + (g.FLOOR + 14) + '" stroke="' + N + '" stroke-opacity="0.45" stroke-width="0.8"/><text x="' + (g.ML + 3) + '" y="' + (g.FLOOR + 25) + '" font-size="9" fill="' + N + '" font-weight="600"></text><text x="' + (g.ML + 3) + '" y="' + (g.FLOOR + 37) + '" font-size="9" fill="' + N + '"></text><text x="' + (g.ML + 3) + '" y="' + (g.FLOOR + 49) + '" font-size="9" fill="' + N + '"></text></g>';
+    const ptr = {}; svg.querySelectorAll('.ptr').forEach(q => { [q.dataset.f, q.dataset.t].forEach(i => { (ptr[i] = ptr[i] || []).push(q); }); });
+    if (!att._ts){ att._ts = att.ev.map(e => e.t); att._byI = {}; att.ev.forEach((e, j) => { att._byI[e.i] = j; }); }
+    const lines = [...svg.querySelectorAll('.stk, g.ptr[data-seg]')].map(el => { const q = el.dataset.seg.split(' ').map(Number); return {el, t0: +el.dataset.t0, t1: +el.dataset.t1, ax: q[0], ay: q[1], bx: q[2], by: q[3], ptr: el.classList.contains('ptr'), hid: false}; });
+    return {svg, att, g, scene, kids, lines, times: kids.map(x => +x.dataset.t), G, back: G.children[0], pane: G.children[1], clip: G.querySelector('clipPath path'), now: G.querySelector('.hvn'), front: G.querySelector('.hvf'), over: G.querySelector('.hvt'), okey: null, lab: G.lastChild, txt: G.querySelector('text'), txt2: G.querySelectorAll('text')[1], txt3: G.querySelectorAll('text')[2], key: null, ref: undefined, tk: null, hot: [], ptr}; };
+  const bisect = (arr, t, asc) => { let lo = 0, hi = arr.length; while (lo < hi){ const m = (lo + hi) >> 1; if (asc ? arr[m] <= t : arr[m] > t) lo = m + 1; else hi = m; } return lo; };
+  const onScroll = () => { if (!lastEv) return; const el = document.elementFromPoint(lastEv.clientX, lastEv.clientY); if (!el || !box.contains(el)){ drop(); return; } box.dispatchEvent(new CustomEvent('st-follow', {detail: {clientX: lastEv.clientX, clientY: lastEv.clientY, target: el}})); };
+  window.addEventListener('scroll', onScroll, {passive: true}); box.addEventListener('scroll', onScroll, {passive: true});
+  const move = ev => { lastEv = ev.detail || ev; if (raf) return; raf = requestAnimationFrame(() => { raf = 0; const e0 = lastEv, svg = e0.target.closest ? e0.target.closest('svg[data-id]') : null; if (!svg){ drop(); return; }
+    if (st && st.svg !== svg) drop(); if (!st) st = start(svg); const att = st.att, g = st.g, r = svg.getBoundingClientRect(); const rawT = (e0.clientX - r.left - g.ML) / g.PX; let t = Math.max(0, Math.min(att.dur, rawT));
+    let j = -1, snap = false;
+    if ((e0.clientY - r.top < g.RAIL - 1 || e0.clientY - r.top > g.FLOOR + 3) && att.ev.length){
+      const k = bisect(att._ts, t, true), b = k <= 0 ? 0 : k >= att.ev.length ? att.ev.length - 1 : (t - att._ts[k - 1] <= att._ts[k] - t ? k - 1 : k);
+      if (Math.abs(att._ts[b] - t) * g.PX <= 12){ j = b; t = att._ts[b]; snap = true; } }
+    if (!snap) j = bisect(att._ts, t, true) - 1;
+    const last = j >= 0 ? att.ev[j] : null, hotI = last && last.kind !== 'clear' && last.kind !== 'reset' ? last.i : -1;
+    const past = rawT > att.dur + 0.3, at = !past && (snap || (j >= 0 && (t - att._ts[j]) * g.PX <= 12)), btw = !at, nx = btw && !past ? att.ev[j + 1] || null : null;
+    const key = j + ':' + hotI + (btw ? ':b' : '') + (past ? ':p' : '') + (last && last.w ? ':w' + last.w : '');
+    { const lv = !btw && last && last.kind !== 'clear' && last.kind !== 'reset' && last.level != null ? String(last.level) : null;
+      if (lv !== st.lv){ st.lv = lv; svg.querySelectorAll('.lvl, .lvline').forEach(x => x.classList.toggle('on', x.dataset.l === lv)); } }
+    {
+      const visL = Math.max(0, box.getBoundingClientRect().left - r.left), hid = visL > g.ML - 12, k2 = (hid ? Math.round(visL) : 'x') + ':' + st.lv;
+      if (!st.lvG){ st.lvG = document.createElementNS(NS, 'g'); st.lvG.setAttribute('class', 'lvf'); svg.appendChild(st.lvG); }
+      if (k2 !== st.lvk){ st.lvk = k2; let h = '';
+        if (hid){ const x = visL + 16, top = g.TICKY - (9 + g.LS * g.maxL) - 5;
+          h += '<rect x="' + (visL + 3) + '" y="' + top + '" width="17" height="' + (g.LS * g.maxL + 9) + '" rx="2" fill="#fff" fill-opacity="0.9" stroke="' + N + '" stroke-opacity="0.15"/>';
+          for (let L = 0; L <= g.maxL; L++) h += '<text class="lvl' + (String(L) === st.lv ? ' on' : '') + '" x="' + x + '" y="' + (g.TICKY - (9 + g.LS * L) + 2.3) + '" font-size="6.5" fill="' + GR + '" text-anchor="end">' + L + '</text>'; }
+        st.lvG.innerHTML = h; } }
+    st.at = btw ? -1 : j; svg.style.cursor = !btw && last && last.alts ? 'pointer' : '';
+    if (key !== st.key){ st.key = key; st.pane.innerHTML = paneSVG(att, g, 0, j >= 0 ? states(att)[j] : [], new Set(), Object.assign({clues: true, strong: true, cleared: last && last.kind === 'clear' ? [[last.r, last.c]] : []}, !btw ? Object.assign({}, wiring(att, last), {spent: last && last.cp && j > 0 && last.pz ? last.pz.sp : null}) : nx && nx.pz ? {cells: nx.pz.oc, next: nx.kind === 'reset' ? null : [nx.r, nx.c], spent: nx.cp && last && nx.pz ? nx.pz.sp : null} : past ? {cells: att.ec || ''} : {})); }
+    { const visL = Math.max(0, box.getBoundingClientRect().left - r.left), okey = key + ':' + Math.round(visL / 16); if (okey !== st.okey){ st.okey = okey; st.over.innerHTML = btw ? nextOverlay(att, g, nx) : tickOverlay(att, g, last, visL); svg.classList.toggle('stand', btw); svg.classList.toggle('sel', !btw && !!(last && last.src && last.src.length));
+      { const cut = last ? last.i : -1; svg.classList.toggle('hvon', !btw); svg.querySelectorAll('.arc[data-t]').forEach(a => { const q = evOf(att, +a.dataset.t); a.classList.toggle('after', +a.dataset.t > cut); a.classList.toggle('gn', btw && !!q && q.gone != null && q.gone <= cut); }); } } }
+    const dx = (t * g.PX).toFixed(1); st.pane.setAttribute('transform', 'translate(' + dx + ' 0)'); st.clip.setAttribute('transform', 'translate(' + dx + ' 0)'); st.lab.setAttribute('transform', 'translate(' + dx + ' 0)'); { let l1 = t.toFixed(1) + ' s', l2 = '', l3 = '';
+      if (btw){ l1 += nx ? ' · ' + (nx.cp ? 'choice point · ' : '') + (nx.wait >= att.cut ? 'a pause of ' : 'a wait of ') + (nx.wait >= 10 ? nx.wait.toFixed(0) : nx.wait.toFixed(1)) + ' s' : ' · ' + (att.done ? 'solved' : 'not solved'); }
+      else if (last && last.kind === 'reset') l1 += ' · reset';
+      else if (last) l1 += ' · ' + one(last.r, last.c) + ' · ' + (last.fam || (last.kind === 'clear' ? 'unfill' : last.kind)) + (last.cp ? ' · choice point' : '') + ' · interval ' + (last.wait >= 10 ? last.wait.toFixed(0) : last.wait.toFixed(1)) + ' s' + (last.wait >= att.cut ? ', a pause' : '') + (last.alts && last.w ? ' · wiring ' + (last.w + 1) + ' of ' + last.alts.length : '');
+      st.txt.textContent = l1; st.txt2.innerHTML = l2; st.txt3.innerHTML = l3; }
+    { const x = g.ML + t * g.PX, visR = Math.min(Math.max(g.W, svg.closest('.att').clientWidth - 24), box.getBoundingClientRect().right - r.left), visL0 = Math.max(0, box.getBoundingClientRect().left - r.left);
+      const len = Math.max(st.txt.textContent.length, st.txt2.textContent.length, st.txt3.textContent.length) * 5.1, mode = x + 6 + len <= visR ? 'r' : x - 4 - len >= visL0 ? 'l' : 'pin';
+      [st.txt, st.txt2, st.txt3].forEach(tx => { tx.setAttribute('text-anchor', mode === 'l' ? 'end' : 'start'); tx.setAttribute('x', mode === 'r' ? g.ML + 3 : mode === 'l' ? g.ML - 4 : g.ML + (visL0 + 6 - x)); }); }
+    const ref = st.kids[bisect(st.times, t, g.DX >= 0)] || null; if (ref !== st.ref || st.G.parentNode !== st.scene){ st.scene.insertBefore(st.G, ref); st.ref = ref; }
+    { let plain = ''; const rest = [], now = [], nowI = snap ? String(att.ev[j].i) : null;
+      st.lines.forEach(L => { const isNow = L.ptr && nowI !== null && L.el.dataset.t === nowI, cross = !isNow && L.t0 < t && t < L.t1, hide = cross || isNow;
+        if (hide !== L.hid){ L.el.style.visibility = hide ? 'hidden' : ''; L.hid = hide; }
+        if (isNow){ const c = L.el.cloneNode(true); c.style.visibility = ''; now.push(c); return; } if (!cross) return;
+        const f = (t - L.t0) / (L.t1 - L.t0), cx = (L.ax + f * (L.bx - L.ax)).toFixed(1), cy = (L.ay + f * (L.by - L.ay)).toFixed(1), vis = L.ptr ? L.el.querySelector('.v') : L.el;
+        plain += '<path class="' + (L.ptr ? 'ptr' : 'stk') + '" d="M' + L.ax + ' ' + L.ay + ' L' + cx + ' ' + cy + '" fill="none" stroke="' + vis.getAttribute('stroke') + '" stroke-width="' + vis.getAttribute('stroke-width') + '" stroke-opacity="' + vis.getAttribute('stroke-opacity') + '" stroke-linecap="round"/>';
+        const c = L.el.cloneNode(true); c.style.visibility = ''; (L.ptr ? [...c.querySelectorAll('path')].slice(0, 2) : [c]).forEach(q => { const d = q.getAttribute('d'); q.setAttribute('d', 'M' + cx + ' ' + cy + d.slice(d.indexOf(' L'))); }); rest.push(c); });
+      const early = g.DX >= 0 ? st.back : st.front, late = g.DX >= 0 ? st.front : st.back;
+      early.innerHTML = plain; late.replaceChildren(...rest); st.now.replaceChildren(...now); }
+    const tk = e0.target.closest('.tk, .ptr'), id = tk ? (tk.classList.contains('tk') ? 'k' + tk.dataset.i : 'p' + tk.dataset.f + '>' + tk.dataset.t) : null;
+    if (id !== st.tk){ st.tk = id; st.hot.forEach(x => x.classList.remove('hot')); st.hot = tk ? (tk.classList.contains('tk') ? (st.ptr[tk.dataset.i] || []) : [tk]) : []; st.hot.forEach(x => x.classList.add('hot')); svg.classList.toggle('hov', st.hot.some(x => x.classList.contains('ptr'))); } }); };
+  box.addEventListener('mousemove', move); box.addEventListener('st-follow', move);
+  box.addEventListener('click', () => { if (!st || st.at < 0) return; const att = st.att, e = att.ev[st.at]; if (!e || !e.alts) return;
+    e.w = ((e.w || 0) + 1) % e.alts.length; const w = e.alts[e.w]; e.src = w.src; e.ln = w.ln; e.tech = w.tech; e.clue = w.k === 'clue'; att._need = undefined;
+    const ph = st.svg.parentElement, g = geom(att), le = lastEv; drop(); ph.style.width = Math.ceil(g.W) + 'px'; ph.style.height = g.H + 'px'; ph.innerHTML = build(att); ph.dataset.on = '1'; ph.dataset.z = zoom;
+    if (le) box.dispatchEvent(new CustomEvent('st-follow', {detail: {clientX: le.clientX, clientY: le.clientY, target: document.elementFromPoint(le.clientX, le.clientY) || ph.firstChild}})); });
+  box.addEventListener('mouseleave', () => { lastEv = null; drop(); }); }
+document.getElementById('legend').innerHTML = [[T, 'follows the latest lead'], [BL, 'returns to an earlier lead'], [PURP, 'follows either lead'], [AM, 'right guess'], [OR2C, 'false guess'], [RD, 'ruled-out fill'], [BRN, 'correction'], [GR, 'unfills a right mark'], [RSC, 'reset']].map(q => '<span><svg width="14" height="16"><path d="M2 5 L9 1 L9 12 L2 16 Z" fill="' + q[0] + '"/></svg>' + q[1] + '</span>').join('') + '<span><svg width="30" height="16"><path d="M2 5 L9 1 L9 12 L2 16 Z" fill="' + T + '" fill-opacity="0.92"/><path d="M18 5 L25 1 L25 12 L18 16 Z" fill="' + T + '" fill-opacity="0.28"/></svg>solid stays to the end, faded is erased later</span><span><svg width="14" height="16"><path d="M2 5 L9 1 L9 12 L2 16 Z" fill="#fff" stroke="' + GR + '"/></svg>a clear</span><span><svg width="30" height="20"><path d="M3 8 L24 1 L24 13 L3 20 Z M3 14 L24 7 M13.5 4.5 L13.5 16.5" fill="none" stroke="' + GL + '" stroke-opacity="0.6" stroke-width="0.7"/><path d="M13.5 4.5 L24 1 L24 7 L13.5 10.5 Z" fill="' + T + '"/></svg>every mark in a faint grid of its own</span><span><svg width="40" height="18"><path d="M2 16 H38" stroke="' + N + '" stroke-opacity="0.35"/><path d="M6 16 V12 M34 16 V12" stroke="' + N + '" stroke-width="1.6" stroke-opacity="0.55"/><path d="M6 11.5 V6 Q6 2.5 9.5 2.5 H30.5 Q34 2.5 34 6 V7.8" fill="none" stroke="' + PU + '" stroke-width="1"/><path d="M31.8 7.4 L34 11.2 L36.2 7.4 Z" fill="' + PU + '"/></svg>on hover, a pointer from the hinting tick to the acting tick</span><span><svg width="34" height="20"><path d="M3 18 V4 C3 1 6 1 9 1 H16" fill="none" stroke="' + PU + '" stroke-width="1"/><path d="M14 -1 L18 1 L14 3 Z" fill="' + PU + '" transform="translate(0 0)"/><rect x="18.5" y="-2.5" width="7" height="7" rx="1.5" fill="#fff" stroke="' + PU + '" stroke-width="0.9" transform="translate(0 3.5)"/><path d="M20.5 2.5 l3 3 m-3 0 l3 -3" stroke="' + PU + '" stroke-width="1" fill="none" transform="translate(0 0.5)"/><path d="M22 8 V17" stroke="' + PU + '" stroke-width="1"/><path d="M19.5 14 L22 18 L24.5 14 Z" fill="' + PU + '"/></svg>through an × box, the hint passed through that empty cell</span><span><svg width="46" height="18"><rect x="3" y="3" width="12" height="12" fill="none" stroke="' + OR + '" stroke-width="2.2"/><rect x="25" y="3" width="12" height="12" fill="none" stroke="' + OR + '" stroke-width="1.8" stroke-dasharray="2.2 1.8"/></svg>the acting cell and a hinting cell</span><span><svg width="26" height="18"><rect x="3" y="1.5" width="7.2" height="16" rx="3" fill="' + T + '" fill-opacity="0.22"/><rect x="5.5" y="4" width="2.2" height="13" fill="' + T + '"/><rect x="17" y="4" width="2.2" height="13" fill="' + T + '" fill-opacity="0.3"/></svg>a tick glows when its mark stays to the end, faint when it is erased later</span><span><svg width="34" height="18"><path d="M2 16 H32 M2 12 H32 M2 8 H32 M2 4 H32" stroke="' + N + '" stroke-opacity="0.15"/><rect x="6" y="12" width="2.2" height="4" fill="' + T + '"/><rect x="15" y="8" width="2.2" height="8" fill="' + T + '"/><rect x="24" y="4" width="2.2" height="12" fill="' + T + '"/></svg>tick height: level 0, 1, 2 …</span><span><svg width="30" height="20"><path d="M3 8 L24 1 L24 13 L3 20 Z" fill="#DCEAF3" fill-opacity="0.7" stroke="' + GL + '"/></svg>a glass pane, the board as it stood</span><span><svg width="16" height="16"><rect x="2" y="2" width="12" height="12" fill="none" stroke="' + INK + '" stroke-width="1.8"/></svg>where the student went next</span>';
+document.getElementById('legend').insertAdjacentHTML('beforeend', '<span><svg width="22" height="12"><rect x="1" y="1" width="20" height="10" fill="' + AM + '" fill-opacity="0.35"/></svg>a choice point, the lead the student was following along their line used up, or the board empty</span>');
+apply();</script>
+<script>(function (root) {
+'use strict';
+const KEY = (r, c) => r + '-' + c, RC = k => k.split('-').map(Number);
+const ARR = new Map();
+function arrangements(clue, n) {
+  const id = clue.join(',') + '/' + n; if (ARR.has(id)) return ARR.get(id);
+  const out = [], runs = clue.filter(x => x > 0);
+  const rec = (i, pos, arr) => {
+    if (i === runs.length) { out.push(arr.slice()); return; }
+    const L = runs[i], rest = runs.slice(i + 1).reduce((s, x) => s + x + 1, 0);
+    for (let p = pos; p + L + rest <= n; p++) { const a2 = arr.slice(); for (let k = p; k < p + L; k++) a2[k] = 1; rec(i + 1, p + L + 1, a2); }
+  };
+  rec(0, 0, new Array(n).fill(0)); ARR.set(id, out); return out;
+}
+function prep(P) {
+  if (P.lines) return P;
+  P.lines = [];
+  for (let r = 0; r < P.n; r++) P.lines.push({clue: P.rows[r], keys: Array.from({length: P.n}, (_, c) => KEY(r, c)), name: 'row ' + (r + 1)});
+  for (let c = 0; c < P.n; c++) P.lines.push({clue: P.cols[c], keys: Array.from({length: P.n}, (_, r) => KEY(r, c)), name: 'col ' + (c + 1)});
+  P.byName = Object.fromEntries(P.lines.map(L => [L.name, L]));
+  P.clueLead = {}; P.lines.forEach(L => { const all = arrangements(L.clue, P.n); P.clueLead[L.name] = new Set(L.keys.filter((q, i) => all.every(a => a[i] === 1))); });
+  P.cache = new Map(); return P;
+}
+function fits(P, L, fill, empty) {
+  return arrangements(L.clue, P.n).filter(a => L.keys.every((q, i) => fill.has(q) ? a[i] === 1 : empty && empty.has(q) ? a[i] === 0 : true));
+}
+function decided(P, fill) {
+  const id = [...fill].sort().join('|'); if (P.cache.has(id)) return P.cache.get(id);
+  const out = new Map(), x1 = new Set();
+  for (const L of P.lines) {
+    const ok = fits(P, L, fill, null); if (!ok.length) continue;
+    L.keys.forEach((q, i) => { const v0 = ok[0][i]; if (fill.has(q) || !ok.every(a => a[i] === v0)) return;
+      const e = out.get(q); if (!e) out.set(q, {v: v0, round: 1, lines: [L.name]}); else if (e.round === 1 && e.lines.indexOf(L.name) < 0) e.lines.push(L.name);
+      if (v0 === 0) x1.add(q); });
+  }
+  for (const L of P.lines) {
+    const ok = fits(P, L, fill, x1); if (!ok.length) continue;
+    L.keys.forEach((q, i) => { const v0 = ok[0][i]; if (fill.has(q) || !ok.every(a => a[i] === v0)) return;
+      const e = out.get(q); if (!e) out.set(q, {v: v0, round: 2, lines: [L.name]}); else if (e.round === 2 && e.lines.indexOf(L.name) < 0) e.lines.push(L.name); });
+  }
+  P.cache.set(id, out); return out;
+}
+function lineForced(P, name, marks) {
+  const L = P.byName[name], ok = fits(P, L, marks, null);
+  return ok.length ? new Set(L.keys.filter((q, i) => ok.every(a => a[i] === 1))) : null;
+}
+const onLine = (q, name) => { const [r, c] = RC(q), [ax, v] = name.split(' '); return ax === 'row' ? r === +v - 1 : c === +v - 1; };
+function sharedLine(a, b) { const [r1, c1] = RC(a), [r2, c2] = RC(b); if (r1 === r2 && c1 !== c2) return ['row ' + (r1 + 1), 'col ' + (c2 + 1)]; if (c1 === c2 && r1 !== r2) return ['col ' + (c1 + 1), 'row ' + (r2 + 1)]; return [null, null]; }
+function relation(m, p) {
+  if (!m.sup) return 'ahead';
+  if (m.opener === p.j) return 'continues';
+  if (p.sup && m.opener === p.opener && (m.opener !== -1 || m.par.some(x => p.par.indexOf(x) >= 0))) return 'sibling';
+  return 'back';
+}
+function attempt(P, acts) {
+  prep(P); const n = acts.length, isRight = q => { const [r, c] = RC(q); return P.sol[r][c] === '#'; };
+  const K = x => KEY(x.r, x.c);
+  const boards = [], TB = []; let board = [];
+  for (let j = 0; j <= n; j++) {
+    boards.push(board.slice()); TB.push(new Set(board.filter(isRight)));
+    if (j === n) break; const x = acts[j];
+    if (x.t === 'f') { if (board.indexOf(K(x)) < 0) board.push(K(x)); } else if (x.t === 'u') board = board.filter(q => q !== K(x)); else board = [];
+  }
+  const st = TB.map(s => decided(P, s));
+  const known = (k, v, s) => (st[s].has(k) && st[s].get(k).v === v) || (v === 1 && TB[s].has(k));
+  const H = []; let since = new Map();
+  for (let s = 0; s <= n; s++) {
+    const ones = [...st[s]].filter(([, e]) => e.v === 1).map(([q]) => q), keep = new Set([...ones, ...TB[s]]), ns = new Map();
+    keep.forEach(q => ns.set(q, since.has(q) ? since.get(q) : s)); since = ns;
+    H.push(new Map(ones.map(q => [q, since.get(q) - 1])));
+  }
+  const TD = {}, rows = []; let prev = null, placed = {}, unfillRun = null;
+  for (let j = 0; j < n; j++) {
+    const x = acts[j], stand = boards[j], row = {j};
+    if (x.t === 'f') {
+      const k = K(x), right = isRight(k), v = right ? 1 : 0;
+      const td = {j, sup: known(k, v, j), right, opener: null, par: []};
+      if (td.sup) { let h = j; while (h > 0 && known(k, v, h - 1)) h--; td.opener = h === 0 ? -1 : h - 1; if (h === 0) td.par = st[0].get(k).lines.slice(); }
+      const pk = prev === null ? 'none' : prev.mark ? 'mark' : 'off'; td.rel = pk === 'mark' ? relation(td, prev) : pk; TD[j] = td;
+      const decR = st[j].has(k) ? st[j].get(k).v : null;
+      let fam;
+      if (right && decR === 1) fam = (td.rel === 'continues' || td.rel === 'sibling') ? 'follows the latest lead' : td.rel === 'back' ? 'returns to an earlier lead' : 'deducible, no lead in hand';
+      else if (!right && decR === 0) fam = 'ruled-out fill';
+      else if (decR === null) fam = right ? 'right guess' : 'false guess';
+      else fam = 'other';
+      if (fam === 'deducible, no lead in hand') {
+        if (!stand.length) fam = 'follows the latest lead';
+        else { const rl = relation(td, TD[placed[stand[stand.length - 1]]]); fam = (rl === 'continues' || rl === 'sibling') ? 'follows the latest lead' : 'returns to an earlier lead'; }
+      }
+      if (fam === 'returns to an earlier lead' && stand.length) {
+        const [lr, lc] = RC(stand[stand.length - 1]), via = [];
+        if (lr === x.r) via.push('row ' + (lr + 1)); if (lc === x.c) via.push('col ' + (lc + 1));
+        if (via.some(nm => { const f = lineForced(P, nm, TB[j]); return f && f.has(k); })) fam = 'follows either lead';
+      }
+      let moment = null;
+      if (!stand.length) moment = 'choice point';
+      else if (j && acts[j - 1].t === 'f' && isRight(K(acts[j - 1]))) {
+        const p = TD[j - 1], a = acts[j - 1], q = j >= 2 && acts[j - 2].t === 'f' && K(acts[j - 2]) !== K(a) ? acts[j - 2] : null;
+        const lines = q && q.r === a.r ? ['row ' + (a.r + 1)] : q && q.c === a.c ? ['col ' + (a.c + 1)] : ['row ' + (a.r + 1), 'col ' + (a.c + 1)];
+        const follows = (c, o) => o === p.j || (p.sup && o === p.opener && (o !== -1 || p.par.some(L => P.clueLead[L].has(c))));
+        const gives = lines.some(nm => { const f = lineForced(P, nm, TB[j]); return f && [...f].some(c => !TB[j].has(c)); });
+        moment = gives || [...H[j]].some(([c, o]) => lines.some(nm => onLine(c, nm)) && follows(c, o)) ? 'line open' : 'choice point';
+      }
+      Object.assign(row, {move: 'fill', k, right, sup: td.sup, opener: td.opener, fam, moment}); placed[k] = j; unfillRun = null;
+    } else if (x.t === 'u') {
+      const k = K(x); delete placed[k];
+      Object.assign(row, {move: 'unfill', k, fam: isRight(k) ? 'unfills a right mark' : 'correction', manual: false});
+      const after = boards[j + 1];
+      if (unfillRun === null) unfillRun = {start: rows.length, marks: after.length + 1};
+      if (!after.length && unfillRun.marks >= 3) { for (let i = unfillRun.start; i < rows.length; i++) rows[i].manual = true; row.manual = true; unfillRun = null; }
+    } else { Object.assign(row, {move: 'reset', fam: 'button reset'}); placed = {}; unfillRun = null; }
+    rows.push(row); prev = x.t === 'f' ? Object.assign({}, TD[j], {mark: true}) : {j, mark: false};
+  }
+  return {rows, boards, TB};
+}
+function timeline(P, acts, lab) {
+  const out = []; let t = 0;
+  acts.forEach((x, i) => { t += x.dt;
+    if (x.t !== 'f') { out.push({i, t, k: x.t === 'r' ? null : KEY(x.r, x.c), kind: x.t === 'u' ? 'clear' : 'reset', run: null, change: false, turn: false, wait: x.dt}); return; }
+    const k = KEY(x.r, x.c), row = lab.rows[i];
+    out.push({i, t, k, kind: !row.right ? 'false' : row.sup ? 'forced' : 'guess', run: null, change: false, turn: false, wait: x.dt}); });
+  const fills = out.filter(e => e.kind !== 'reset'); let run = 0, line = null; const orient = {};
+  const same = (a, b) => { const [r1, c1] = RC(a), [r2, c2] = RC(b); return r1 === r2 || c1 === c2; };
+  const lineOf = (a, b) => { const [r1] = RC(a), [r2, c2] = RC(b); return r1 === r2 ? ['row', r2] : ['col', c2]; };
+  fills.forEach((e, j) => {
+    if (j === 0) { e.run = run; return; }
+    const p = fills[j - 1];
+    if (out.some(x => x.kind === 'reset' && p.i < x.i && x.i < e.i)) { run++; line = null; e.run = run; e.change = true; return; }
+    if (e.k === p.k) { e.run = run; return; }
+    const [er, ec] = RC(e.k);
+    if (line && (line[0] === 'row' ? er === line[1] : ec === line[1])) { e.run = run; return; }
+    if (!line && same(p.k, e.k)) { line = lineOf(p.k, e.k); orient[run] = line[0]; e.run = run; return; }
+    run++; line = null; e.run = run; e.change = true; e.turn = same(p.k, e.k);
+    if (e.turn) { line = lineOf(p.k, e.k); orient[run] = line[0]; }
+  });
+  fills.forEach(e => { e.orient = orient[e.run] || null; });
+  fills.forEach((e, j) => { e.given = null;
+    if (j && e.kind !== 'clear' && fills[j - 1].k !== e.k && (e.run === fills[j - 1].run || e.turn)) {
+      const [L] = sharedLine(fills[j - 1].k, e.k);
+      if (L) { const marks = new Set(lab.boards[e.i]), f = lineForced(P, L, marks); e.given = f && f.has(e.k) && !marks.has(e.k) ? 'line' : 'other'; }
+    } });
+  out.forEach(e => { if (e.kind === 'reset') { e.run = null; e.orient = null; } });
+  return out;
+}
+function reflexWaits(tl) {
+  const w = [];
+  tl.forEach((e, j) => { if (!j || e.kind === 'reset' || e.kind === 'clear') return; const p = tl[j - 1];
+    if (p.kind === 'reset' || e.change || e.given !== 'line') return; const [r1, c1] = RC(p.k), [r2, c2] = RC(e.k);
+    if (Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1) w.push(Math.max(e.wait, 0.05)); });
+  return w;
+}
+const median = v => { const s = v.slice().sort((a, b) => a - b), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; };
+function build(PUZ, attempts, opt) {
+  opt = opt || {}; const KB = opt.KB || 1.75, STUDY = opt.study || ['nonogram1', 'nonogram2', 'nonogram3'], MIN_EASY = 5;
+  attempts.forEach(a => {
+    const P = PUZ[a.board], st = new Set(); a.acts.forEach(x => { const k = KEY(x.r, x.c); if (x.t === 'f') st.add(k); else if (x.t === 'u') st.delete(k); else st.clear(); });
+    const want = []; P.sol.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === '#') want.push(KEY(r, c)); }));
+    a.done = st.size === want.length && want.every(k => st.has(k)); });
+  const done = attempts.map(a => { const P = PUZ[a.board]; const lab = attempt(P, a.acts), tl = timeline(P, a.acts, lab); return {a, P, lab, tl}; });
+  const seen = new Set(), EW = {};
+  done.forEach(d => { const key = d.a.student + '|' + d.a.board; if (seen.has(key)) return; seen.add(key);
+    if (STUDY.indexOf(d.a.board) >= 0) (EW[d.a.student] = EW[d.a.student] || []).push(...reflexWaits(d.tl)); });
+  const pooled = [].concat(...Object.values(EW)), GT = median(pooled) || 0.6;
+  const ET = s => EW[s] && EW[s].length >= MIN_EASY ? median(EW[s]) : GT;
+  return done.map(({a, P, lab, tl}) => {
+    const et = ET(a.student), gone = {};
+    a.acts.forEach((x, i) => { if (x.t === 'f') gone[i] = null; });
+    const standing = {}; a.acts.forEach((x, i) => { const k = KEY(x.r, x.c);
+      if (x.t === 'f') standing[k] = i; else if (x.t === 'u') { if (standing[k] !== undefined) { gone[standing[k]] = i; delete standing[k]; } } else { Object.keys(standing).forEach(q => { gone[standing[q]] = i; }); Object.keys(standing).forEach(q => delete standing[q]); } });
+    const ev = tl.map(e => {
+      const row = lab.rows[e.i], x = a.acts[e.i], out = {i: e.i, t: +e.t.toFixed(2), r: x.t === 'r' ? null : x.r, c: x.t === 'r' ? null : x.c, kind: e.kind,
+        level: x.t === 'f' && P.level ? (P.level[KEY(x.r, x.c)] !== undefined ? P.level[KEY(x.r, x.c)] : null) : null, stays: x.t === 'f' && gone[e.i] === null,
+        run: e.run, turn: !!e.turn, change: !!e.change, orient: e.orient || null, given: e.given || null, wait: +e.wait.toFixed(2), ln: null, tech: null, clue: false, src: [], gone: x.t === 'f' ? gone[e.i] : undefined,
+        fam: row.move === 'unfill' && row.manual ? 'manual reset' : row.fam, pz: {o: {}, oc: '', sp: []}};
+      if (row.move === 'fill' && row.moment === 'choice point') out.cp = 1;
+      if (row.move === 'fill' && row.sup && row.right) {
+        if (row.opener >= 0 && a.acts[row.opener] && a.acts[row.opener].t === 'f') { const ok = KEY(a.acts[row.opener].r, a.acts[row.opener].c); out.src = [[row.opener, null]]; out.ln = sharedLine(ok, KEY(x.r, x.c))[0]; }
+        else if (row.opener === -1) out.clue = true;
+      }
+      return out; });
+    return {id: a.id, student: a.student, board: a.board, done: a.done, moves: a.acts.length, corr: a.acts.filter(x => x.t !== 'f').length,
+            dur: ev.length ? ev[ev.length - 1].t : 0, ev, end: {}, ec: '', cut: +(KB * et).toFixed(2), et: +et.toFixed(2), ownTempo: !!(EW[a.student] && EW[a.student].length >= MIN_EASY)};
+  });
+}
+function csvRow(line) { const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) { const ch = line[i];
+    if (q) { if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true; else if (ch === ',') { out.push(cur); cur = ''; } else cur += ch; }
+  out.push(cur); return out; }
+function parseCSV(text, known) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim()), head = csvRow(lines[0]).map(h => h.trim().toLowerCase()), ix = n => head.indexOf(n);
+  ['attempt', 'puzzle', 'action', 'row', 'col', 'seconds'].forEach(n => { if (ix(n) < 0) throw new Error('the file has no ' + n + ' column'); });
+  const by = new Map();
+  lines.slice(1).forEach(l => { const r = csvRow(l), id = r[ix('attempt')]; if (!id) return;
+    let pz = r[ix('puzzle')]; if (pz === 'nonogram4') pz = 'nonogram3'; if (known.indexOf(pz) < 0) return;
+    if (!by.has(id)) by.set(id, {id, student: ix('student') >= 0 ? r[ix('student')] : id, board: pz, done: false, acts: []});
+    const act = r[ix('action')].trim().toLowerCase(), t = act === 'fill' ? 'f' : (act === 'clear' || act === 'unfill') ? 'u' : act === 'reset' ? 'r' : null; if (!t) return;
+    by.get(id).acts.push({t, r: t === 'r' ? null : +r[ix('row')] - 1, c: t === 'r' ? null : +r[ix('col')] - 1, dt: +r[ix('seconds')] || 0, n: ix('act') >= 0 ? +r[ix('act')] : 0}); });
+  const out = [...by.values()].filter(a => a.acts.length); out.forEach(a => a.acts.sort((x, y) => x.n - y.n)); return out;
+}
+const API = {arrangements, decided, lineForced, attempt, timeline, reflexWaits, build, parseCSV};
+if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SpaceTimeCore = API;
+})(typeof globalThis !== 'undefined' ? globalThis : this);</script><script>(function(){
+  const PUZ = {"nonogram_practice":{"n":4,"rows":[[1],[2,1],[1],[1]],"cols":[[1],[1,1],[1,1],[1]],"sol":["..#.","##.#","..#.",".#.."],"level":{"1-0":0,"1-1":0,"1-2":0,"1-3":0,"0-0":1,"2-0":1,"3-0":1,"0-1":1,"2-1":1,"3-1":1,"0-2":1,"0-3":1,"2-3":1,"3-3":1,"2-2":2,"3-2":2}},"nonogram1":{"n":5,"rows":[[1,1],[1,1],[2,1],[3],[1,1]],"cols":[[1,1],[4],[1,1],[2],[2]],"sol":["#.#..",".#..#","##..#",".###.",".#.#."],"level":{"2-1":0,"3-2":0,"1-1":0,"3-1":0,"1-0":1,"1-2":1,"3-4":1,"2-2":1,"4-2":1,"2-0":2,"0-2":2,"1-4":2,"4-4":2,"0-1":3,"0-3":3,"1-3":3,"4-3":3,"3-0":3,"3-3":4,"4-1":4,"2-3":4,"2-4":5,"4-0":5,"0-0":6,"0-4":6}},"nonogram2":{"n":5,"rows":[[1,1],[1],[1,1,1],[2,2],[1,1]],"cols":[[3],[2],[1,1],[2],[1,2]],"sol":["..#.#","#....","#.#.#","##.##",".#.#."],"level":{"2-0":0,"2-1":0,"2-2":0,"2-3":0,"2-4":0,"3-0":0,"3-1":0,"3-2":0,"3-3":0,"3-4":0,"0-0":1,"0-1":1,"1-1":1,"4-1":1,"1-2":1,"0-3":1,"1-3":1,"4-3":1,"0-4":1,"1-4":1,"4-4":1,"0-2":2,"1-0":2,"4-0":2,"4-2":2}},"nonogram3":{"n":6,"rows":[[3],[1,1,1],[1,3],[1],[1,1,1],[3,2]],"cols":[[2,2],[1,1,1],[2,2],[2],[2,2],[1,1]],"sol":["###...","#.#.#.",".#.###","...#..","#.#.#.","###.##"],"level":{"2-3":0,"2-4":0,"5-0":0,"5-1":0,"5-2":0,"5-3":0,"5-4":0,"5-5":0,"1-0":0,"4-0":0,"1-2":0,"4-2":0,"1-4":0,"4-4":0,"1-1":1,"1-3":1,"1-5":1,"4-1":1,"4-3":1,"4-5":1,"3-0":1,"3-2":1,"0-3":1,"0-4":1,"3-4":1,"0-0":2,"0-1":2,"0-2":2,"0-5":2,"3-3":2,"3-1":3,"3-5":3,"2-0":3,"2-2":3,"2-1":4,"2-5":4}}}, KB = 1.7487;
+  const box = document.getElementById('atts');
+  function showDrop(msg){ if (DATA.atts.length) return;
+    box.innerHTML = '<label class="dropbox" for="loadF"><b>drop an attempts CSV here</b><span>or click to choose one</span>' + (msg ? '<span class="dropmsg">' + msg + '</span>' : '')
+      + '<span class="dropnote">The file is read here in your browser and never uploaded. It takes the same CSV as Replay, one row per act.</span></label><input type="file" id="loadF" accept=".csv,text/csv" hidden>';
+    document.getElementById('loadF').addEventListener('change', e => read(e.target.files[0])); }
+  function load(text){ let atts;
+    try { atts = SpaceTimeCore.parseCSV(text, DATA.order); } catch (e) { showDrop(String(e.message || e)); return; }
+    if (!atts.length){ showDrop('no attempts on these puzzles in that file'); return; }
+    const built = SpaceTimeCore.build(PUZ, atts, {KB: KB});
+    DATA.atts.length = 0; built.forEach(a => DATA.atts.push(a));
+    Object.keys(MAXL).forEach(k => delete MAXL[k]); DATA.atts.forEach(a => a.ev.forEach(e => { if (e.level != null) MAXL[a.board] = Math.max(MAXL[a.board] || 0, e.level); }));
+    Object.keys(byId).forEach(k => delete byId[k]); DATA.atts.forEach(a => { byId[a.id] = a; });
+    apply(); }
+  function read(f){ if (!f) return; const fr = new FileReader(); fr.onload = () => load(String(fr.result)); fr.readAsText(f); }
+  document.addEventListener('dragover', e => { e.preventDefault(); const b = document.querySelector('.dropbox'); if (b) b.classList.add('over'); });
+  document.addEventListener('dragleave', () => { const b = document.querySelector('.dropbox'); if (b) b.classList.remove('over'); });
+  document.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer && e.dataTransfer.files[0]) read(e.dataTransfer.files[0]); });
+  const apply0 = apply; apply = function(){ apply0.apply(this, arguments); if (!DATA.atts.length) showDrop(); };
+  window.loadAttemptsCSV = load;
+  const burg = document.getElementById('burg'), bnav = document.getElementById('bnav');
+  burg.addEventListener('click', ev => { ev.stopPropagation(); bnav.classList.toggle('on'); }); document.addEventListener('click', () => bnav.classList.remove('on'));
+  showDrop();
+})();</script></body></html>
